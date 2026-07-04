@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="96" fill="#071f16"/>
+<circle cx="256" cy="216" r="104" fill="#ffcc33"/>
+<path d="M178 340h156l-28 74H206z" fill="#b9861a"/>
+<path d="M160 158c24-48 72-76 128-70 56 7 97 45 112 99-45-21-82-22-113-5-35 20-73 15-127-24z" fill="#f5f1e6" opacity=".5"/>
+<text x="256" y="245" font-size="84" text-anchor="middle" font-family="Arial" font-weight="700" fill="#071f16">🏆</text>
+</svg>

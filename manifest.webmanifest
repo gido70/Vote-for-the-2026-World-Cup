@@ -1,0 +1,19 @@
+{
+  "name": "توقعات كأس العالم 2026",
+  "short_name": "توقعاتي",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#071f16",
+  "theme_color": "#071f16",
+  "description": "منصة توقعات كأس العالم 2026",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
