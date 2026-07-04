@@ -780,6 +780,11 @@ async function renderAdmin(){
       await sset('actual-results', a, true);
       await sset('actual-scores', scores, true);
 
+      // مزامنة الأدوار الإقصائية تلقائياً
+      if (typeof buildKnockout === 'function') {
+        try { await buildKnockout(a); } catch(e){ console.error(e); }
+      }
+
       toast('✅ تم حفظ/تحديث النتيجة ومطابقة التوقعات');
       renderAdmin();
     };
@@ -811,6 +816,26 @@ async function renderAdmin(){
     });
   }
 }
+
+
+async function buildKnockout(actual){
+  const ko = (await sget('knockout-data', true)) || {};
+
+  const winner = id => actual[id] || null;
+
+  ko.qf1 = {a:winner('m1'), b:winner('m2')};
+  ko.qf2 = {a:winner('m3'), b:winner('m4')};
+  ko.qf3 = {a:winner('m5'), b:winner('m6')};
+  ko.qf4 = {a:winner('m7'), b:winner('m8')};
+
+  ko.sf1 = {a:winner('qf1'), b:winner('qf2')};
+  ko.sf2 = {a:winner('qf3'), b:winner('qf4')};
+
+  ko.final = {a:winner('sf1'), b:winner('sf2')};
+
+  await sset('knockout-data', ko, true);
+}
+
 
 /* ---------------- Confetti / Fireworks ---------------- */
 const canvas = document.getElementById('fx-canvas');
