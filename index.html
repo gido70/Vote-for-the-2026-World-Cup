@@ -342,7 +342,7 @@ function publicInfoCard(){
         </div>
         <div class="mini-box">
           <b>📊 العدالة في الترتيب</b><br>
-          تظهر لوحة الترتيب: عدد المباريات التي صوّت فيها كل مشارك، وعدد التوقعات الصحيحة والخاطئة، والنقاط الكلية. من يفوته لقاء يستطيع المشاركة في المباريات التالية، لكن يظهر عدد مشاركاته بوضوح للجميع.
+          تظهر لوحة الترتيب: عدد المباريات المحسومة التي شارك فيها كل مشارك، وعدد التوقعات الصحيحة والخاطئة، والنقاط الكلية. من يفوته لقاء يستطيع المشاركة في المباريات التالية، لكن يظهر عدد مشاركاته بوضوح للجميع.
         </div>
       </div>
     </div>
@@ -508,8 +508,8 @@ async function renderLeaderboard(){
     MATCHES.forEach(m=>{
       const result = actual[m.id];
       const pick = p.picks ? p.picks[m.id] : null;
-      if(pick) voted++;
       if(result && pick){
+        voted++;
         if(result === pick){
           correct++;
           score += ROUND_WEIGHTS[m.round];
