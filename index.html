@@ -65,6 +65,13 @@
   .match-card{background:var(--card);border:1px solid var(--pitch-line);border-radius:16px;padding:14px;margin-bottom:10px;}
   .match-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--chalk-dim);margin-bottom:10px;gap:8px;}
   .status-pill{font-size:10.5px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap;}
+  .vote-summary{margin-top:10px;padding-top:10px;border-top:1px dashed var(--pitch-line);}
+  .vote-row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--chalk-dim);margin-bottom:5px;gap:6px;}
+  .vote-row b{color:var(--chalk);}
+  .vote-track{display:flex;height:12px;border-radius:7px;overflow:hidden;background:#0a2419;border:1px solid var(--pitch-line);}
+  .vote-fill-a{background:linear-gradient(90deg,var(--gold-deep),var(--gold));transition:width .4s;}
+  .vote-fill-b{background:linear-gradient(90deg,#2f6fbf,#5a9ae0);transition:width .4s;}
+  .vote-total{font-size:10px;color:var(--chalk-dim);text-align:center;margin-top:5px;opacity:.8;}
   .status-open{background:rgba(47,191,113,.15);color:var(--green-ok);border:1px solid var(--green-ok);}
   .status-locked{background:rgba(226,72,61,.12);color:var(--red);border:1px solid var(--red);}
   .status-pending{background:rgba(255,255,255,.05);color:var(--chalk-dim);border:1px solid var(--pitch-line);}
@@ -204,15 +211,10 @@ const MATCHES = [
   {id:'m5',  round:0, a:'BRA', b:'NOR', kickoff:'2026-07-05T20:00:00Z', venue:'نيوجيرسي'},
   {id:'m6',  round:0, a:'MEX', b:'ENG', kickoff:'2026-07-06T00:00:00Z', venue:'مكسيكو سيتي'},
   {id:'m7',  round:0, a:'ARG', b:'EGY', kickoff:'2026-07-07T16:00:00Z', venue:'أتلانتا'},
-  {id:'m8',  round:0, a:'SUI', b:'COL', kickoff:'2026-07-07T20:00:00Z', venue:'فانكوفر'},
-  {id:'qf1', round:1, feedA:'m1', feedB:'m2', kickoff:'2026-07-09T20:00:00Z', venue:'فوكسبورو (بوسطن)'},
-  {id:'qf2', round:1, feedA:'m3', feedB:'m4', kickoff:'2026-07-10T19:00:00Z', venue:'إنجلوود (لوس أنجلوس)'},
-  {id:'qf3', round:1, feedA:'m5', feedB:'m6', kickoff:'2026-07-11T21:00:00Z', venue:'ميامي غاردنز'},
-  {id:'qf4', round:1, feedA:'m7', feedB:'m8', kickoff:'2026-07-12T01:00:00Z', venue:'كانساس سيتي'},
-  {id:'sf1', round:2, feedA:'qf1', feedB:'qf2', kickoff:'2026-07-14T19:00:00Z', venue:'أرلينغتون'},
-  {id:'sf2', round:2, feedA:'qf3', feedB:'qf4', kickoff:'2026-07-15T19:00:00Z', venue:'أتلانتا'},
-  {id:'final', round:3, feedA:'sf1', feedB:'sf2', kickoff:'2026-07-19T19:00:00Z', venue:'نيوجيرسي (النهائي)'}
+  {id:'m8',  round:0, a:'SUI', b:'COL', kickoff:'2026-07-07T20:00:00Z', venue:'فانكوفر'}
 ];
+/* ملاحظة: ربع النهائي/نصف النهائي/النهائي أصبح التصويت عليها حصريًا في knockout.html
+   (تصويت بالنتيجة بالأهداف)، فلم تعد ضمن هذا الجدول لتفادي ازدواج التصويت. */
 const ROUND_LABELS = ['دور الـ16','ربع النهائي','نصف النهائي','النهائي'];
 const ROUND_WEIGHTS = [1,2,4,8];
 const LOCK_MINUTES_BEFORE = 5;
@@ -340,23 +342,21 @@ function publicInfoCard(){
       <div class="promo-grid" style="margin-top:10px">
         <div class="mini-box">
           <b>📋 طريقة المشاركة</b><br>
-          ⚽ <b>دور الـ16:</b> اختر الفريق الفائز فقط.<br>
-          ⚽ <b>ربع النهائي:</b> توقع نتيجة المباراة بالأهداف.<br>
-          ⚽ <b>نصف النهائي:</b> توقع النتيجة بالأهداف.<br>
-          🏆 <b>النهائي:</b> توقع النتيجة وحدد بطل العالم.<br>
+          ⚽ <b>دور الـ16 (هنا):</b> اختر الفريق الفائز فقط.<br>
+          🏆 <b>ربع/نصف النهائي والنهائي:</b> التصويت بتحديد النتيجة بالأهداف (1-0، 2-1...) في صفحة "الأدوار الإقصائية" المنفصلة — اضغط الرابط الذهبي أعلاه.<br>
           ⏱️ يغلق التصويت قبل كل مباراة بـ <b>${LOCK_MINUTES_BEFORE} دقائق</b>.
         </div>
         <div class="mini-box">
           <b>⭐ احتساب النقاط</b><br>
-          ✔ دور الـ16 = <b>1 نقطة</b> لكل توقع صحيح.<br>
-          ✔ ربع النهائي = <b>2 نقطتان</b>.<br>
-          ✔ نصف النهائي = <b>4 نقاط</b>.<br>
-          ✔ النهائي = <b>8 نقاط</b>.<br>
-          🎯 ابتداءً من ربع النهائي: <b>+2 نقطة</b> للتوقع الدقيق للنتيجة.
+          ✔ دور الـ16 = <b>1 نقطة</b> لكل توقع صحيح (هنا).<br>
+          ✔ ربع النهائي = <b>2 نقطتان</b> (في صفحة الأدوار الإقصائية).<br>
+          ✔ نصف النهائي = <b>4 نقاط</b> (في صفحة الأدوار الإقصائية).<br>
+          ✔ النهائي = <b>8 نقاط</b> (في صفحة الأدوار الإقصائية).<br>
+          🎯 ابتداءً من ربع النهائي: <b>+2 نقطة</b> إضافية للتوقع الدقيق للنتيجة.
         </div>
         <div class="mini-box">
           <b>📊 العدالة في الترتيب</b><br>
-          تظهر لوحة الترتيب: عدد المباريات المحسومة التي شارك فيها كل مشارك، وعدد التوقعات الصحيحة والخاطئة، والنقاط الكلية. من يفوته لقاء يستطيع المشاركة في المباريات التالية، لكن يظهر عدد مشاركاته بوضوح للجميع.
+          تظهر لوحة الترتيب: عدد المباريات المحسومة التي شارك فيها كل مشارك، وعدد التوقعات الصحيحة والخاطئة، والنقاط الكلية. من يفوته لقاء يستطيع المشاركة في المباريات التالية، لكن يظهر عدد مشاركاته بوضوح للجميع. لوحة ترتيب دور الـ16 هنا، ولوحة ترتيب الأدوار الإقصائية في صفحتها المنفصلة.
         </div>
       </div>
     </div>
@@ -404,6 +404,35 @@ async function renderMatches(){
   $app.innerHTML = `<div class="banner">جاري تحميل المباريات...</div>`;
   const actual = await getActual();
   const myPicks = await getMyPicks();
+  const predKeys = await slist('predictions:', true);
+  const allPreds = [];
+  if(predKeys){
+    for(const k of predKeys){
+      const v = await sget(k, true);
+      if(v) allPreds.push(v);
+    }
+  }
+  function voteCounts(matchId, teamA, teamB){
+    let a = 0, b = 0;
+    allPreds.forEach(p=>{
+      const pick = p.picks ? p.picks[matchId] : null;
+      if(pick === teamA) a++;
+      else if(pick === teamB) b++;
+    });
+    return { a, b, total: a + b };
+  }
+  function voteBarHtml(matchId, teamA, teamB){
+    const tA = TEAMS[teamA], tB = TEAMS[teamB];
+    const { a, b, total } = voteCounts(matchId, teamA, teamB);
+    const pctA = total ? Math.round((a/total)*100) : 50;
+    const pctB = total ? 100 - pctA : 50;
+    return `
+      <div class="vote-summary">
+        <div class="vote-row"><span>${tA.flag} ${tA.name} <b>${pctA}%</b></span><span><b>${pctB}%</b> ${tB.name} ${tB.flag}</span></div>
+        <div class="vote-track"><div class="vote-fill-a" style="width:${pctA}%"></div><div class="vote-fill-b" style="width:${pctB}%"></div></div>
+        <div class="vote-total">${total ? `👥 ${total} صوّتوا حتى الآن` : 'لا توجد أصوات بعد'}</div>
+      </div>`;
+  }
   let html = `
     <div class="topbar">
       <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
@@ -474,6 +503,9 @@ async function renderMatches(){
                   <button class="team-row vote-btn" data-match="${match.id}" data-pick="${st.teamB}"><span class="flag">${teamB.flag}</span><span class="name">${teamB.name}</span></button>
                   <div class="note">يغلق التصويت الساعة ${localTimeStr(new Date(new Date(match.kickoff).getTime()-LOCK_MINUTES_BEFORE*60000).toISOString())}</div>`;
       }
+    }
+    if(st.phase !== 'pending'){
+      html += voteBarHtml(match.id, st.teamA, st.teamB);
     }
     html += `</div>`;
   });
