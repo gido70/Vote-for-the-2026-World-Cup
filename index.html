@@ -185,6 +185,13 @@ async function slist(prefix, shared=false){
   if(error){ console.error('slist', error); return null; }
   return (data || []).map(x => x.k);
 }
+// يجلب كل سجلات التنبؤ ببادئة معيّنة بطلب واحد فقط (بدل حلقة sget لكل مستخدم)
+async function getAllPredictions(prefix){
+  if(!sb) return null;
+  const { data, error } = await sb.rpc('get_predictions', { prefix });
+  if(error){ console.error('getAllPredictions', error); return null; }
+  return (data || []).map(row => row.v);
+}
 async function sdel(key, shared=false){
   if(!sb) return false;
   const { error } = await sb.from('wc_store').delete().eq('k', key);
@@ -404,14 +411,7 @@ async function renderMatches(){
   $app.innerHTML = `<div class="banner">جاري تحميل المباريات...</div>`;
   const actual = await getActual();
   const myPicks = await getMyPicks();
-  const predKeys = await slist('predictions:', true);
-  const allPreds = [];
-  if(predKeys){
-    for(const k of predKeys){
-      const v = await sget(k, true);
-      if(v) allPreds.push(v);
-    }
-  }
+  const allPreds = (await getAllPredictions('predictions:')) || [];
   function voteCounts(matchId, teamA, teamB){
     let a = 0, b = 0;
     allPreds.forEach(p=>{
@@ -551,20 +551,18 @@ async function renderMatches(){
 async function renderLeaderboard(){
   $app.innerHTML = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📊 لوحة الترتيب</div></div><div class="banner">جاري التحميل...</div>`;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
-  const keys = await slist('predictions:', true);
+  const people = await getAllPredictions('predictions:');
   const actual = await getActual();
-  if(keys === null){
+  if(people === null){
     $app.querySelector('.banner').outerHTML = `<div class="empty-note error-banner">تعذّر تحميل التوقعات من قاعدة البيانات.</div>`;
     return;
   }
-  if(keys.length===0){
+  if(people.length===0){
     $app.querySelector('.banner').outerHTML = `<div class="empty-note">لسه محدش صوّت 🤷‍♂️<br>ارجع للمباريات وابدأ توقعك!</div>`;
     return;
   }
 
   const decidedMatches = MATCHES.filter(m => actual[m.id]).length;
-  const people = [];
-  for(const k of keys){ const v = await sget(k, true); if(v) people.push(v); }
 
   const scored = people.map(p=>{
     let score = 0, correct = 0, wrong = 0, voted = 0;
@@ -627,14 +625,7 @@ async function renderAdmin(){
   const actual = await getActual();
   const actualScores = (await sget('actual-scores', true)) || {};
 
-  const predKeys = await slist('predictions:', true);
-  const allPreds = [];
-  if(predKeys){
-    for(const k of predKeys){
-      const v = await sget(k, true);
-      if(v) allPreds.push(v);
-    }
-  }
+  const allPreds = (await getAllPredictions('predictions:')) || [];
 
   function getVoteStats(matchId, winnerCode){
     const votes = {};
