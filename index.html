@@ -159,7 +159,7 @@ const MATCHES = [
 ];
 const ROUND_LABELS = ['دور الـ16','ربع النهائي','نصف النهائي','النهائي'];
 const ROUND_WEIGHTS = [1,2,4,8];
-const LOCK_MINUTES_BEFORE = 30;
+const LOCK_MINUTES_BEFORE = 5;
 const ADMIN_PIN = (window.WC_SUPABASE_CONFIG && window.WC_SUPABASE_CONFIG.adminPin) || 'QX742';
 
 function matchById(id){ return MATCHES.find(m=>m.id===id); }
@@ -272,14 +272,14 @@ function renderName(){
     <div class="topbar"><div class="brand"><span class="trophy">🏆</span> توقعات المونديال 2026</div></div>
     <div class="hero">
       <h1>مين هيوصل <span>للنهائي؟</span></h1>
-      <p>توقع كل مباراة قبل انطلاقها بنصف ساعة على الأقل، تابع النتائج مع أصحابك يوميًا حتى النهائي 🔥</p>
+      <p>توقع كل مباراة قبل انطلاقها بخمس دقائق على الأقل، تابع النتائج مع أصحابك يوميًا حتى النهائي 🔥</p>
       <div class="fieldwrap">
         <label>طريقة الاستخدام</label>
         <div style="font-size:13px;line-height:2;">
           1️⃣ اكتب اسمك الحقيقي مرة واحدة.<br>
           2️⃣ كل مباراة لها توقع مستقل.<br>
           3️⃣ لا يمكن تعديل التوقع بعد الاختيار.<br>
-          4️⃣ التصويت يغلق قبل المباراة بـ ${LOCK_MINUTES_BEFORE} دقيقة.<br>
+          4️⃣ التصويت يغلق قبل المباراة بـ ${LOCK_MINUTES_BEFORE} دقائق.<br>
           5️⃣ النتائج والترتيب محفوظة في قاعدة البيانات للجميع.
         </div>
       </div>
