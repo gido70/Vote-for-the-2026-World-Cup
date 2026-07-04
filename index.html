@@ -132,6 +132,20 @@
     box-shadow:0 12px 30px rgba(0,0,0,.28);
   }
 
+
+  .compact-vote-summary{
+    padding:8px 10px!important;
+    margin-top:8px!important;
+    font-size:11px!important;
+    line-height:1.6!important;
+    opacity:.92;
+  }
+  .danger-zone{
+    border-color:#8a2a24!important;
+    background:rgba(226,72,61,.08)!important;
+    margin-top:18px!important;
+  }
+
 </style>
 </head>
 <body>
@@ -393,7 +407,7 @@ async function renderMatches(){
   let html = `
     <div class="topbar">
       <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
-      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button><a class="navbtn" href="./knockout.html" style="text-decoration:none">🏆 الأدوار الإقصائية</a>
+      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button>
     </div>
     ${publicInfoCard()}
   `;
@@ -442,7 +456,7 @@ async function renderMatches(){
           const isMyPick = st.myPick === code;
           html += `<div class="team-row static ${isMyPick?'selected':''}"><span class="flag">${t.flag}</span><span class="name">${t.name}</span></div>`;
         });
-        html += `<div class="note">✅ توقعك محفوظ — لا يمكن تعديله</div>`;
+        html += `<div class="note">✅ تم حفظ توقعك تلقائيًا — لا يوجد زر إرسال ولا يمكن التعديل بعد الحفظ</div>`;
       } else {
         html += `<button class="team-row vote-btn" data-match="${match.id}" data-pick="${st.teamA}"><span class="flag">${teamA.flag}</span><span class="name">${teamA.name}</span></button>
                   <div class="vs-label">VS</div>
@@ -458,7 +472,13 @@ async function renderMatches(){
   $app.innerHTML = html;
   window.scrollTo(0, scrollY);
   document.getElementById('lbBtn').onclick = ()=>{ state.view='leaderboard'; render(); };
-  document.getElementById('logoutBtn').onclick = ()=>{ localStorage.removeItem('wc2026-player-key'); state.view='name'; renderName(); };
+  document.getElementById('logoutBtn').onclick = ()=>{
+    const ok = confirm('هل تريد تغيير الاسم على هذا الجهاز؟ لن تُحذف التصويتات السابقة، لكن يجب إدخال اسم جديد أو نفس الاسم المسجل.');
+    if(!ok) return;
+    localStorage.removeItem('wc2026-player-key');
+    state.view='name';
+    renderName();
+  };
   document.getElementById('adminEntry').onclick = async ()=>{
     if(!(await askPinAsync())){ toast('رمز غير صحيح ❌'); return; }
     state.view = 'admin'; render();
@@ -623,7 +643,7 @@ async function renderAdmin(){
             <div>${tB.flag} ${tB.name}</div>
             <input type="text" inputmode="numeric" class="score-input" data-match="${match.id}" data-side="b" value="${score.b ?? ''}" placeholder="0" style="text-align:center;">
           </div>
-          <div class="note">اختر الفائز بعد كتابة النتيجة، حتى لو كانت بركلات الترجيح.</div>
+          <div class="note">اكتب النتيجة أولاً، ثم اختر الفائز، ثم اضغط زر حفظ/تحديث النتيجة. يمكنك تعديلها حتى نهاية المباراة.</div>
         </div>
       `;
 
@@ -635,11 +655,12 @@ async function renderAdmin(){
         </button>`;
       });
 
+      html += `<button class="btn btn-gold save-result-btn" data-match="${match.id}" data-current="${result || ''}">💾 حفظ / تحديث النتيجة</button>`;
       const votesA = stats.votes[teamA] || [];
       const votesB = stats.votes[teamB] || [];
       html += `
-        <div class="fieldwrap" style="padding:12px;margin-top:10px;">
-          <label>ملخص التصويت لهذه المباراة</label>
+        <div class="fieldwrap compact-vote-summary">
+          <label>ملخص التصويت</label>
           <div class="note" style="text-align:right">
             ${tA.flag} ${tA.name}: <b>${votesA.length}</b> تصويت<br>
             ${tB.flag} ${tB.name}: <b>${votesB.length}</b> تصويت<br>
@@ -666,14 +687,25 @@ async function renderAdmin(){
   });
 
   html += `
-    <button class="btn btn-outline" id="resetActualBtn">♻️ تصفير كل النتائج الفعلية</button>
+    <div class="fieldwrap danger-zone">
+      <label>منطقة حساسة</label>
+      <button class="btn btn-outline" id="showResetBtn">⚠️ إظهار خيار تصفير النتائج</button>
+      <button class="btn btn-outline" id="resetActualBtn" style="display:none;border-color:#e2483d;color:#ffd9d9">♻️ تصفير كل النتائج الفعلية</button>
+      <div class="note">لا تستخدم هذا الخيار إلا إذا أردت حذف نتائج المباريات المعتمدة فقط.</div>
+    </div>
     <div class="round-header"><span class="lbl">إدارة التوقعات</span><div class="line"></div></div>
     <div id="predsList"></div>
   `;
 
   $app.innerHTML = html;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
+  document.getElementById('showResetBtn').onclick = ()=>{
+    document.getElementById('resetActualBtn').style.display = 'block';
+    toast('ظهر زر التصفير. اضغطه فقط إذا كنت متأكدًا.');
+  };
   document.getElementById('resetActualBtn').onclick = async ()=>{
+    const ok = confirm('تحذير: سيتم تصفير كل النتائج الفعلية المعتمدة. التصويتات لن تُحذف. هل أنت متأكد؟');
+    if(!ok) return;
     await sdel('actual-results', true);
     await sdel('actual-scores', true);
     toast('تم تصفير النتائج الفعلية فقط');
@@ -703,10 +735,23 @@ async function renderAdmin(){
     toast('تم حذف اللوجو');
   };
 
+  let pendingAdminWinner = {};
   $app.querySelectorAll('.admin-pick').forEach(btn=>{
-    btn.onclick = async ()=>{
+    btn.onclick = ()=>{
       const matchId = btn.getAttribute('data-match');
       const pick = btn.getAttribute('data-pick');
+      pendingAdminWinner[matchId] = pick;
+      $app.querySelectorAll(`.admin-pick[data-match="${matchId}"]`).forEach(x=>x.classList.remove('selected'));
+      btn.classList.add('selected');
+      toast('تم اختيار الفائز مؤقتًا. اضغط حفظ/تحديث النتيجة لاعتمادها.');
+    };
+  });
+
+  $app.querySelectorAll('.save-result-btn').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const matchId = btn.getAttribute('data-match');
+      const pick = pendingAdminWinner[matchId] || btn.getAttribute('data-current');
+      if(!pick){ toast('اختر الفريق الفائز أولاً'); return; }
 
       const scores = (await sget('actual-scores', true)) || {};
       const aInput = $app.querySelector(`.score-input[data-match="${matchId}"][data-side="a"]`);
@@ -724,10 +769,14 @@ async function renderAdmin(){
       await sset('actual-results', a, true);
       await sset('actual-scores', scores, true);
 
-      toast('تم اعتماد النتيجة ومطابقة التوقعات ✅');
+      toast('✅ تم حفظ/تحديث النتيجة ومطابقة التوقعات');
       renderAdmin();
     };
   });
+
+  /*
+
+  */
 
   const keys = await slist('identity:', true);
   const people = [];
