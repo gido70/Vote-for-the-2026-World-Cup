@@ -33,8 +33,11 @@
   body::before{
     content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     background-image:var(--wc-logo-bg, none);
-    background-repeat:no-repeat;background-position:center 42%;background-size:min(72vw,320px);
-    opacity:.075;filter:grayscale(1) contrast(1.1);
+    background-repeat:no-repeat;
+    background-position:center 36%;
+    background-size:min(82vw,520px);
+    opacity:.16;
+    filter:none;
   }
   .num{font-family:'Oswald',sans-serif;}
   #app{max-width:480px;margin:0 auto;padding:18px 16px 60px;min-height:100vh;position:relative;z-index:1;}
@@ -90,6 +93,45 @@
   .toast.show{opacity:1;bottom:30px;}
   .pin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;}
   .pin-box{background:var(--card);border:1px solid var(--pitch-line);border-radius:16px;padding:20px;width:100%;max-width:320px;}
+
+  .promo-card{
+    background:linear-gradient(180deg, rgba(255,204,51,.16), rgba(14,42,31,.96));
+    border:2px solid rgba(255,204,51,.75);
+    border-radius:18px;
+    padding:14px;
+    margin:12px 0 14px;
+    box-shadow:0 12px 30px rgba(0,0,0,.22);
+  }
+  .promo-title{text-align:center;color:var(--gold);font-weight:900;font-size:18px;margin:0 0 10px;}
+  .promo-grid{display:grid;grid-template-columns:1fr;gap:8px;}
+  .mini-box{background:rgba(7,31,22,.58);border:1px solid var(--pitch-line);border-radius:14px;padding:10px;line-height:1.8;font-size:12.5px;color:var(--chalk);}
+  .mini-box b{color:var(--gold);}
+  .prize-row{display:flex;gap:8px;justify-content:space-between;text-align:center;margin-top:6px;}
+  .prize{flex:1;background:rgba(0,0,0,.22);border:1px solid rgba(255,204,51,.45);border-radius:12px;padding:8px 4px;font-weight:900;color:var(--chalk);}
+  .prize span{display:block;font-size:22px;margin-bottom:2px;}
+  .ticker{
+    border:1px solid rgba(255,204,51,.55);
+    background:rgba(255,204,51,.12);
+    color:var(--gold);
+    border-radius:999px;
+    padding:8px 12px;
+    font-weight:900;
+    font-size:12px;
+    text-align:center;
+    margin:8px 0 12px;
+  }
+  .lb-stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:5px;}
+  .stat-pill{font-size:10.5px;border:1px solid var(--pitch-line);border-radius:999px;padding:3px 7px;color:var(--chalk-dim);background:rgba(0,0,0,.18);}
+  .stat-pill.good{color:var(--green-ok);border-color:rgba(47,191,113,.55);}
+  .stat-pill.bad{color:#ff9b95;border-color:rgba(226,72,61,.45);}
+  .hero-logo{
+    width:min(230px,68vw);
+    display:block;
+    margin:0 auto 12px;
+    border-radius:14px;
+    box-shadow:0 12px 30px rgba(0,0,0,.28);
+  }
+
 </style>
 </head>
 <body>
@@ -179,7 +221,11 @@ function toast(msg){
 }
 async function applySavedLogo(){
   const settings = (await sget('settings', true)) || {};
-  if(settings.logoDataUrl) document.documentElement.style.setProperty('--wc-logo-bg', `url("${settings.logoDataUrl}")`);
+  if(settings.logoDataUrl){
+    document.documentElement.style.setProperty('--wc-logo-bg', `url("${settings.logoDataUrl}")`);
+    const h=document.getElementById('heroLogo');
+    if(h){h.src=settings.logoDataUrl;h.style.display='block';}
+  }
 }
 function askPinAsync(){
   return new Promise(resolve=>{
@@ -266,58 +312,61 @@ function renderConfigError(){
     </div>`;
 }
 
+
+function publicInfoCard(){
+  return `
+    <div class="promo-card">
+      <div class="promo-title">🏆 مسابقة توقعات كأس العالم 2026</div>
+      <div class="ticker">🎁 جوائز للمراكز الثلاثة الأولى — شارك في أكبر عدد ممكن من المباريات وارفع نقاطك</div>
+      <div class="prize-row">
+        <div class="prize"><span>🥇</span>الأول<br><small>الجائزة الأولى</small></div>
+        <div class="prize"><span>🥈</span>الثاني<br><small>الجائزة الثانية</small></div>
+        <div class="prize"><span>🥉</span>الثالث<br><small>الجائزة الثالثة</small></div>
+      </div>
+      <div class="promo-grid" style="margin-top:10px">
+        <div class="mini-box">
+          <b>📋 طريقة المشاركة</b><br>
+          ⚽ <b>دور الـ16:</b> اختر الفريق الفائز فقط.<br>
+          ⚽ <b>ربع النهائي:</b> توقع نتيجة المباراة بالأهداف.<br>
+          ⚽ <b>نصف النهائي:</b> توقع النتيجة بالأهداف.<br>
+          🏆 <b>النهائي:</b> توقع النتيجة وحدد بطل العالم.<br>
+          ⏱️ يغلق التصويت قبل كل مباراة بـ <b>${LOCK_MINUTES_BEFORE} دقائق</b>.
+        </div>
+        <div class="mini-box">
+          <b>⭐ احتساب النقاط</b><br>
+          ✔ دور الـ16 = <b>1 نقطة</b> لكل توقع صحيح.<br>
+          ✔ ربع النهائي = <b>2 نقطتان</b>.<br>
+          ✔ نصف النهائي = <b>4 نقاط</b>.<br>
+          ✔ النهائي = <b>8 نقاط</b>.<br>
+          🎯 ابتداءً من ربع النهائي: <b>+2 نقطة</b> للتوقع الدقيق للنتيجة.
+        </div>
+        <div class="mini-box">
+          <b>📊 العدالة في الترتيب</b><br>
+          تظهر لوحة الترتيب: عدد المباريات التي صوّت فيها كل مشارك، وعدد التوقعات الصحيحة والخاطئة، والنقاط الكلية. من يفوته لقاء يستطيع المشاركة في المباريات التالية، لكن يظهر عدد مشاركاته بوضوح للجميع.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 /* ---------------- Name gate ---------------- */
 function renderName(){
   $app.innerHTML = `
     <div class="topbar"><div class="brand"><span class="trophy">🏆</span> توقعات المونديال 2026</div></div>
     <div class="hero">
+      <img class="hero-logo" src="" id="heroLogo" style="display:none;">
       <h1>مين هيوصل <span>للنهائي؟</span></h1>
-      <p>توقع كل مباراة قبل انطلاقها بخمس دقائق على الأقل، تابع النتائج مع أصحابك يوميًا حتى النهائي 🔥</p>
+      <p>شارك بتوقعاتك، تابع ترتيبك بعد كل مباراة، ونافس على جوائز المراكز الثلاثة الأولى 🔥</p>
+      ${publicInfoCard()}
       <div class="fieldwrap">
-        <label>طريقة الاستخدام</label>
-        <div style="font-size:13px;line-height:2;">
-          1️⃣ اكتب اسمك الحقيقي مرة واحدة.<br>
-          2️⃣ كل مباراة لها توقع مستقل.<br>
-          3️⃣ لا يمكن تعديل التوقع بعد الاختيار.<br>
-          4️⃣ التصويت يغلق قبل المباراة بـ ${LOCK_MINUTES_BEFORE} دقائق.<br>
-          5️⃣ النتائج والترتيب محفوظة في قاعدة البيانات للجميع.
-        </div>
-      </div>
-      
-<div class="fieldwrap" style="border:2px solid #ffcc33">
-<h3 style="margin:0 0 10px;text-align:center;color:#ffcc33">🏆 مسابقة توقعات كأس العالم 2026</h3>
-<div style="line-height:2;font-size:14px">
-<b>🎁 جوائز البطولة</b><br>
-🥇 المركز الأول<br>
-🥈 المركز الثاني<br>
-🥉 المركز الثالث
-<hr style="border-color:#1c5d46">
-<b>📋 طريقة المشاركة</b><br>
-⚽ دور الـ16: اختر الفريق الفائز فقط.<br>
-⚽ ربع النهائي: توقّع نتيجة المباراة بالأهداف.<br>
-⚽ نصف النهائي: توقّع النتيجة بالأهداف.<br>
-🏆 النهائي: توقّع النتيجة وحدد بطل البطولة.
-<hr style="border-color:#1c5d46">
-<b>⭐ احتساب النقاط</b><br>
-✔ دور الـ16 = 1 نقطة<br>
-✔ ربع النهائي = 2 نقطتان<br>
-✔ نصف النهائي = 4 نقاط<br>
-✔ النهائي = 8 نقاط<br>
-🎯 +2 نقطة إضافية للتوقع الدقيق للنتيجة (ابتداءً من ربع النهائي).
-<hr style="border-color:#1c5d46">
-<b>📊 لوحة الترتيب</b><br>
-يتم تحديث ترتيب جميع المشاركين تلقائياً بعد اعتماد نتيجة كل مباراة من المشرف.
-</div>
-</div>
-
-      <div class="fieldwrap">
-        <label>اكتب اسمك</label>
+        <label>اكتب اسمك للمشاركة</label>
         <input type="text" id="nameInput" placeholder="مثال: أحمد">
-        <button class="btn btn-gold" id="startBtn">🔮 ابدأ</button>
+        <button class="btn btn-gold" id="startBtn">🔮 ابدأ المشاركة</button>
       </div>
       <div class="note" style="margin-top:16px;">إعداد: أبو الهيثم</div>
     </div>
   `;
+  applySavedLogo();
   document.getElementById('startBtn').onclick = async ()=>{
     const v = document.getElementById('nameInput').value.trim();
     if(!v){ toast('اكتب اسمك الأول 🙂'); return; }
@@ -344,8 +393,9 @@ async function renderMatches(){
   let html = `
     <div class="topbar">
       <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
-      <button class="navbtn" id="lbBtn">📊 لوحة الأصدقاء</button>
+      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button>
     </div>
+    ${publicInfoCard()}
   `;
   let lastRound = -1;
   MATCHES.forEach(match=>{
@@ -436,7 +486,7 @@ async function renderMatches(){
 
 /* ---------------- Leaderboard ---------------- */
 async function renderLeaderboard(){
-  $app.innerHTML = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📊 لوحة الأصدقاء</div></div><div class="banner">جاري التحميل...</div>`;
+  $app.innerHTML = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📊 لوحة الترتيب</div></div><div class="banner">جاري التحميل...</div>`;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
   const keys = await slist('predictions:', true);
   const actual = await getActual();
@@ -448,26 +498,61 @@ async function renderLeaderboard(){
     $app.querySelector('.banner').outerHTML = `<div class="empty-note">لسه محدش صوّت 🤷‍♂️<br>ارجع للمباريات وابدأ توقعك!</div>`;
     return;
   }
+
+  const decidedMatches = MATCHES.filter(m => actual[m.id]).length;
   const people = [];
   for(const k of keys){ const v = await sget(k, true); if(v) people.push(v); }
+
   const scored = people.map(p=>{
-    let score = 0;
+    let score = 0, correct = 0, wrong = 0, voted = 0;
     MATCHES.forEach(m=>{
       const result = actual[m.id];
       const pick = p.picks ? p.picks[m.id] : null;
-      if(result && pick && result === pick) score += ROUND_WEIGHTS[m.round];
+      if(pick) voted++;
+      if(result && pick){
+        if(result === pick){
+          correct++;
+          score += ROUND_WEIGHTS[m.round];
+        } else {
+          wrong++;
+        }
+      }
     });
+    const accuracy = (correct + wrong) ? Math.round((correct / (correct + wrong)) * 100) : 0;
     const champPick = p.picks ? p.picks['final'] : null;
-    return { name:p.name, score, champPick };
-  }).sort((a,b)=> b.score - a.score);
+    return { name:p.name, score, champPick, voted, correct, wrong, accuracy };
+  }).sort((a,b)=> 
+    (b.score - a.score) ||
+    (b.correct - a.correct) ||
+    (b.voted - a.voted) ||
+    (b.accuracy - a.accuracy)
+  );
 
-  let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📊 لوحة الأصدقاء</div></div>
-  <div class="banner">النقاط تتحدث بعد تسجيل المشرف لنتيجة المباراة</div>`;
+  const topScore = scored.length ? scored[0].score : 0;
+  let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📊 لوحة الترتيب</div></div>
+  <div class="banner">🏆 الترتيب يعتمد على النقاط، ثم عدد التوقعات الصحيحة، ثم عدد المباريات التي شارك فيها المتسابق. المباريات المحسومة حتى الآن: <b>${decidedMatches}</b></div>`;
+
   scored.forEach((p,i)=>{
     const flag = p.champPick ? TEAMS[p.champPick].flag : '❔';
-    const medal = i===0 ? '👑' : (i===1?'🥈':(i===2?'🥉':(i+1)));
-    html += `<div class="lb-row"><div class="lb-rank">${medal}</div><div class="lb-champ">${flag}</div><div class="lb-name">${escapeHtml(p.name)}</div><div class="lb-score">${p.score}<small> / 32</small></div></div>`;
+    const medal = i===0 ? '🥇' : (i===1?'🥈':(i===2?'🥉':(i+1)));
+    const title = i===0 ? 'المركز الأول' : (i===1?'المركز الثاني':(i===2?'المركز الثالث':''));
+    html += `<div class="lb-row" style="${i<3?'border-color:rgba(255,204,51,.7);background:linear-gradient(90deg,rgba(255,204,51,.12),rgba(14,42,31,.95));':''}">
+      <div class="lb-rank">${medal}</div>
+      <div class="lb-champ">${flag}</div>
+      <div class="lb-name">${escapeHtml(p.name)} ${title?`<div style="font-size:10px;color:var(--gold);margin-top:2px">${title}</div>`:''}
+        <div class="lb-stats">
+          <span class="stat-pill">شارك: ${p.voted}</span>
+          <span class="stat-pill good">صحيح: ${p.correct}</span>
+          <span class="stat-pill bad">خطأ: ${p.wrong}</span>
+          <span class="stat-pill">دقة: ${p.accuracy}%</span>
+        </div>
+      </div>
+      <div class="lb-score">${p.score}<small> نقطة</small></div>
+    </div>`;
   });
+
+  html += `<div class="note">يتم تحديث هذه اللوحة تلقائيًا بعد اعتماد نتيجة كل مباراة من لوحة المشرف.</div>`;
+
   $app.innerHTML = html;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
   if(actual['final'] && scored.length) burstCelebration(0.6);
