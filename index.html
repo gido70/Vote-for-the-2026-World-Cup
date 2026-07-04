@@ -409,6 +409,9 @@ async function renderMatches(){
       <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
       <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button><a class="navbtn" href="./knockout.html">🏆 الأدوار الإقصائية</a>
     </div>
+    <a href="./knockout.html" style="display:block;text-decoration:none;background:linear-gradient(180deg,rgba(255,204,51,.16),rgba(14,42,31,.96));border:2px solid rgba(255,204,51,.7);border-radius:14px;padding:12px 14px;margin-bottom:14px;text-align:center;color:var(--gold);font-weight:900;font-size:14px;">
+      🏆 صوّت الآن على أدوار ربع/نصف النهائي والنهائي ‹ اضغط هنا
+    </a>
     ${publicInfoCard()}
   `;
   let lastRound = -1;
@@ -432,9 +435,17 @@ async function renderMatches(){
         <span class="status-pill ${pillClass}">${pillText}</span>
       </div>`;
     if(st.phase === 'pending'){
-      html += `<div class="team-row static" style="opacity:.5"><span class="flag">❔</span><span class="name">الفائز من ${match.feedA?.toUpperCase()||''}</span></div>
+      const slotHtml = (code, feedId) => code
+        ? `<div class="team-row static"><span class="flag">${TEAMS[code].flag}</span><span class="name">${TEAMS[code].name}</span><span>✅ متأهل</span></div>`
+        : `<div class="team-row static" style="opacity:.5"><span class="flag">❔</span><span class="name">بانتظار الفريق المتأهل</span></div>`;
+      html += `${slotHtml(st.teamA, match.feedA)}
                 <div class="vs-label">VS</div>
-                <div class="team-row static" style="opacity:.5"><span class="flag">❔</span><span class="name">الفائز من ${match.feedB?.toUpperCase()||''}</span></div>`;
+                ${slotHtml(st.teamB, match.feedB)}`;
+      if(st.teamA || st.teamB){
+        html += `<div class="note">✅ تأهل <b>${TEAMS[st.teamA||st.teamB].name}</b> لهذه المباراة تلقائيًا — بانتظار الفريق الثاني.</div>`;
+      } else {
+        html += `<div class="note">بانتظار نتائج الدور السابق</div>`;
+      }
     } else if(st.phase === 'finished'){
       [['a',teamA,st.teamA],['b',teamB,st.teamB]].forEach(([side,t,code])=>{
         const isResult = st.result === code;
