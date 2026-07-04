@@ -435,7 +435,7 @@ async function renderMatches(){
         const isMyPick = st.myPick === code;
         html += `<div class="team-row static ${isMyPick?'selected':''}"><span class="flag">${t.flag}</span><span class="name">${t.name}</span></div>`;
       });
-      html += `<div class="note">${st.myPick ? '✅ صوّتّك محفوظ، بانتظار النتيجة' : '⏱️ فاتك وقت التصويت'}</div>`;
+      html += `<div class="note">${st.myPick ? '✅ تم حفظ توقعك تلقائيًا. بانتظار اعتماد النتيجة الرسمية من المشرف.' : '⏱️ فاتك وقت التصويت'}</div>`;
     } else {
       if(st.myPick){
         [['a',teamA,st.teamA],['b',teamB,st.teamB]].forEach(([side,t,code])=>{
@@ -444,7 +444,7 @@ async function renderMatches(){
         });
         html += `<div class="note">✅ توقعك محفوظ — لا يمكن تعديله</div>`;
       } else {
-        html += `<button class="team-row vote-btn" data-match="${match.id}" data-pick="${st.teamA}"><span class="flag">${teamA.flag}</span><span class="name">${teamA.name}</span></button>
+        html += `<div class="banner">📌 بمجرد اختيار الفريق يتم حفظ توقعك تلقائيًا، ولا يوجد زر إرسال، ولا يمكن تعديل التوقع بعد الحفظ.</div><button class="team-row vote-btn" data-match="${match.id}" data-pick="${st.teamA}"><span class="flag">${teamA.flag}</span><span class="name">${teamA.name}</span></button>
                   <div class="vs-label">VS</div>
                   <button class="team-row vote-btn" data-match="${match.id}" data-pick="${st.teamB}"><span class="flag">${teamB.flag}</span><span class="name">${teamB.name}</span></button>
                   <div class="note">يغلق التصويت الساعة ${localTimeStr(new Date(new Date(match.kickoff).getTime()-LOCK_MINUTES_BEFORE*60000).toISOString())}</div>`;
@@ -477,7 +477,7 @@ async function renderMatches(){
       picks[matchId] = pick;
       const ok = await sset(`predictions:${state.nameKey}`, { name: state.name, key: state.nameKey, picks, updatedAt: Date.now() }, true);
       if(!ok){ toast('فشل حفظ التصويت، حاول مرة أخرى'); return; }
-      toast('تم تسجيل توقعك ✅');
+      toast('✅ تم حفظ توقعك تلقائيًا. بانتظار اعتماد النتيجة الرسمية من المشرف.');
       if(matchId === 'final') burstCelebration(1);
       render();
     };
@@ -551,7 +551,7 @@ async function renderLeaderboard(){
     </div>`;
   });
 
-  html += `<div class="note">يتم تحديث هذه اللوحة تلقائيًا بعد اعتماد نتيجة كل مباراة من لوحة المشرف.</div>`;
+  html += `<div class="note">يتم تحديث هذه اللوحة تلقائيًا بعد اعتماد نتيجة كل مباراة من لوحة المشرف. لا يوجد زر إرسال؛ الاختيار يُحفظ مباشرة.</div>`;
 
   $app.innerHTML = html;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
