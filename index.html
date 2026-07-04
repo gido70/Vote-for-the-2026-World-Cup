@@ -33,8 +33,11 @@
   body::before{
     content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     background-image:var(--wc-logo-bg, none);
-    background-repeat:no-repeat;background-position:center 42%;background-size:min(72vw,320px);
-    opacity:.075;filter:grayscale(1) contrast(1.1);
+    background-repeat:no-repeat;
+    background-position:center 36%;
+    background-size:min(82vw,520px);
+    opacity:.16;
+    filter:none;
   }
   .num{font-family:'Oswald',sans-serif;}
   #app{max-width:480px;margin:0 auto;padding:18px 16px 60px;min-height:100vh;position:relative;z-index:1;}
@@ -44,6 +47,12 @@
   .navbtn{background:transparent;border:1px solid var(--pitch-line);color:var(--chalk-dim);font-family:'Tajawal';font-size:12px;padding:6px 10px;border-radius:20px;cursor:pointer;}
   .navbtn:active{transform:scale(.96);}
   .hero{text-align:center;padding:10px 6px 8px;}
+  .hero-logo{
+    width:min(220px,60vw);
+    display:block;
+    margin:0 auto 14px;
+    filter:drop-shadow(0 6px 18px rgba(0,0,0,.35));
+  }
   .hero h1{font-size:24px;margin:6px 0 4px;font-weight:900;line-height:1.35;}
   .hero h1 span{color:var(--gold);}
   .hero p{color:var(--chalk-dim);font-size:13.5px;margin:0 0 16px;line-height:1.7;}
@@ -179,7 +188,11 @@ function toast(msg){
 }
 async function applySavedLogo(){
   const settings = (await sget('settings', true)) || {};
-  if(settings.logoDataUrl) document.documentElement.style.setProperty('--wc-logo-bg', `url("${settings.logoDataUrl}")`);
+  if(settings.logoDataUrl){
+    document.documentElement.style.setProperty('--wc-logo-bg', `url("${settings.logoDataUrl}")`);
+    const h=document.getElementById('heroLogo');
+    if(h){h.src=settings.logoDataUrl;h.style.display='block';}
+  }
 }
 function askPinAsync(){
   return new Promise(resolve=>{
@@ -242,6 +255,11 @@ async function init(){
     return;
   }
   await applySavedLogo();
+  const settings=(await sget('settings',true))||{};
+  if(settings.logoDataUrl){
+    const el=document.getElementById('heroLogo');
+    if(el){el.src=settings.logoDataUrl;el.style.display='block';}
+  }
   const savedKey = localStorage.getItem('wc2026-player-key');
   if(savedKey){
     const ident = await sget(`identity:${savedKey}`, true);
@@ -271,6 +289,7 @@ function renderName(){
   $app.innerHTML = `
     <div class="topbar"><div class="brand"><span class="trophy">🏆</span> توقعات المونديال 2026</div></div>
     <div class="hero">
+      <img class="hero-logo" src="" id="heroLogo" style="display:none;">
       <h1>مين هيوصل <span>للنهائي؟</span></h1>
       <p>توقع كل مباراة قبل انطلاقها بخمس دقائق على الأقل، تابع النتائج مع أصحابك يوميًا حتى النهائي 🔥</p>
       <div class="fieldwrap">
