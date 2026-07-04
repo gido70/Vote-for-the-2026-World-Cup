@@ -450,41 +450,124 @@ async function renderLeaderboard(){
 async function renderAdmin(){
   $app.innerHTML = `<div class="banner">جاري التحميل...</div>`;
   const actual = await getActual();
+  const actualScores = (await sget('actual-scores', true)) || {};
+
+  const predKeys = await slist('predictions:', true);
+  const allPreds = [];
+  if(predKeys){
+    for(const k of predKeys){
+      const v = await sget(k, true);
+      if(v) allPreds.push(v);
+    }
+  }
+
+  function getVoteStats(matchId, winnerCode){
+    const votes = {};
+    Object.keys(TEAMS).forEach(code => votes[code] = []);
+    allPreds.forEach(p=>{
+      const pick = p.picks ? p.picks[matchId] : null;
+      if(pick && votes[pick]) votes[pick].push(p.name);
+    });
+    const correct = winnerCode && votes[winnerCode] ? votes[winnerCode] : [];
+    const wrong = [];
+    if(winnerCode){
+      allPreds.forEach(p=>{
+        const pick = p.picks ? p.picks[matchId] : null;
+        if(pick && pick !== winnerCode) wrong.push(p.name);
+      });
+    }
+    return { votes, correct, wrong, total: allPreds.filter(p => p.picks && p.picks[matchId]).length };
+  }
+
   let html = `
     <div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">🔒 لوحة المشرف</div></div>
-    <div class="banner">سجّل الفائز الحقيقي لكل مباراة بعد انتهائها.</div>
+    <div class="banner">سجّل النتيجة الرسمية بعد المباراة. التصويتات القديمة محفوظة ولن تتغير.</div>
     <div class="fieldwrap">
       <label>رفع لوجو البطولة / كأس العالم للخلفية المائية</label>
       <input type="file" id="logoFile" accept="image/*">
       <button class="btn btn-outline" id="clearLogoBtn">حذف اللوجو</button>
     </div>
   `;
+
   MATCHES.forEach(match=>{
     const teamA = resolvedTeam(actual, match, 'a');
     const teamB = resolvedTeam(actual, match, 'b');
     const result = actual[match.id];
+    const score = actualScores[match.id] || {};
     html += `<div class="match-card"><div class="match-meta"><span>${ROUND_LABELS[match.round]} · ${match.venue}</span></div>`;
+
     if(!teamA || !teamB){
       html += `<div class="note">بانتظار نتائج الدور السابق</div>`;
     } else {
+      const tA = TEAMS[teamA], tB = TEAMS[teamB];
+      const stats = getVoteStats(match.id, result);
+
+      html += `
+        <div class="fieldwrap" style="padding:12px;margin-bottom:10px;">
+          <label>النتيجة الرسمية</label>
+          <div style="display:grid;grid-template-columns:1fr 70px;gap:8px;align-items:center;margin-bottom:8px;">
+            <div>${tA.flag} ${tA.name}</div>
+            <input type="text" inputmode="numeric" class="score-input" data-match="${match.id}" data-side="a" value="${score.a ?? ''}" placeholder="0" style="text-align:center;">
+            <div>${tB.flag} ${tB.name}</div>
+            <input type="text" inputmode="numeric" class="score-input" data-match="${match.id}" data-side="b" value="${score.b ?? ''}" placeholder="0" style="text-align:center;">
+          </div>
+          <div class="note">اختر الفائز بعد كتابة النتيجة، حتى لو كانت بركلات الترجيح.</div>
+        </div>
+      `;
+
       [['a',teamA],['b',teamB]].forEach(([side,code])=>{
         const t = TEAMS[code];
         const sel = result === code ? 'selected' : '';
-        html += `<button class="team-row admin-pick ${sel}" data-match="${match.id}" data-pick="${code}"><span class="flag">${t.flag}</span><span class="name">${t.name}</span></button>`;
+        html += `<button class="team-row admin-pick ${sel}" data-match="${match.id}" data-pick="${code}">
+          <span class="flag">${t.flag}</span><span class="name">${result === code ? '🏆 ' : ''}${t.name}</span>
+        </button>`;
       });
+
+      const votesA = stats.votes[teamA] || [];
+      const votesB = stats.votes[teamB] || [];
+      html += `
+        <div class="fieldwrap" style="padding:12px;margin-top:10px;">
+          <label>ملخص التصويت لهذه المباراة</label>
+          <div class="note" style="text-align:right">
+            ${tA.flag} ${tA.name}: <b>${votesA.length}</b> تصويت<br>
+            ${tB.flag} ${tB.name}: <b>${votesB.length}</b> تصويت<br>
+            الإجمالي: <b>${stats.total}</b>
+          </div>
+        </div>
+      `;
+
+      if(result){
+        html += `
+          <div class="fieldwrap" style="padding:12px;margin-top:10px;border-color:var(--gold-deep);">
+            <label>مطابقة التوقعات مع النتيجة</label>
+            <div class="note" style="text-align:right">
+              ✅ توقعوا صحيحًا (${stats.correct.length}):<br>
+              <b>${stats.correct.length ? stats.correct.map(escapeHtml).join('، ') : 'لا يوجد'}</b><br><br>
+              ❌ توقعوا خطأ (${stats.wrong.length}):<br>
+              <b>${stats.wrong.length ? stats.wrong.map(escapeHtml).join('، ') : 'لا يوجد'}</b>
+            </div>
+          </div>
+        `;
+      }
     }
     html += `</div>`;
   });
+
   html += `
     <button class="btn btn-outline" id="resetActualBtn">♻️ تصفير كل النتائج الفعلية</button>
     <div class="round-header"><span class="lbl">إدارة التوقعات</span><div class="line"></div></div>
     <div id="predsList"></div>
   `;
+
   $app.innerHTML = html;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
   document.getElementById('resetActualBtn').onclick = async ()=>{
-    await sdel('actual-results', true); toast('تم تصفير النتائج الفعلية'); renderAdmin();
+    await sdel('actual-results', true);
+    await sdel('actual-scores', true);
+    toast('تم تصفير النتائج الفعلية فقط');
+    renderAdmin();
   };
+
   document.getElementById('logoFile').onchange = e=>{
     const file = e.target.files && e.target.files[0];
     if(!file) return;
@@ -499,6 +582,7 @@ async function renderAdmin(){
     };
     reader.readAsDataURL(file);
   };
+
   document.getElementById('clearLogoBtn').onclick = async ()=>{
     const settings = (await sget('settings', true)) || {};
     delete settings.logoDataUrl;
@@ -506,14 +590,29 @@ async function renderAdmin(){
     document.documentElement.style.setProperty('--wc-logo-bg', 'none');
     toast('تم حذف اللوجو');
   };
+
   $app.querySelectorAll('.admin-pick').forEach(btn=>{
     btn.onclick = async ()=>{
       const matchId = btn.getAttribute('data-match');
       const pick = btn.getAttribute('data-pick');
+
+      const scores = (await sget('actual-scores', true)) || {};
+      const aInput = $app.querySelector(`.score-input[data-match="${matchId}"][data-side="a"]`);
+      const bInput = $app.querySelector(`.score-input[data-match="${matchId}"][data-side="b"]`);
+      scores[matchId] = {
+        a: aInput ? aInput.value.trim() : '',
+        b: bInput ? bInput.value.trim() : '',
+        winner: pick,
+        savedAt: Date.now()
+      };
+
       const a = await getActual();
       a[matchId] = pick;
+
       await sset('actual-results', a, true);
-      toast('تم تسجيل النتيجة ✅');
+      await sset('actual-scores', scores, true);
+
+      toast('تم اعتماد النتيجة ومطابقة التوقعات ✅');
       renderAdmin();
     };
   });
