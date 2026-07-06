@@ -546,19 +546,11 @@ async function renderMatches(){
     html += `</div>`;
   });
   html += `<button class="btn-ghost" id="adminEntry">🔒 دخول المشرف</button>
-    <button class="btn-ghost" id="logoutBtn">تغيير الاسم على هذا الجهاز</button>
     <div class="note" style="margin-top:10px;">إعداد: أبو الهيثم</div>`;
   $app.innerHTML = html;
   window.scrollTo(0, scrollY);
   document.getElementById('lbBtn').onclick = ()=>{ state.view='leaderboard'; render(); };
   document.getElementById('hofBtn').onclick = ()=>{ state.view='hof'; render(); };
-  document.getElementById('logoutBtn').onclick = ()=>{
-    const ok = confirm('هل تريد تغيير الاسم على هذا الجهاز؟ لن تُحذف التصويتات السابقة، لكن يجب إدخال اسم جديد أو نفس الاسم المسجل.');
-    if(!ok) return;
-    localStorage.removeItem('wc2026-player-key');
-    state.view='name';
-    renderName();
-  };
   document.getElementById('adminEntry').onclick = async ()=>{
     if(!(await askPinAsync())){ toast('رمز غير صحيح ❌'); return; }
     state.view = 'admin'; render();
