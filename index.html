@@ -85,11 +85,11 @@
   .hof-badge-sub{font-size:10px;color:var(--gold);}
   .hof-cta{display:block;text-decoration:none;text-align:center;background:linear-gradient(180deg,rgba(255,204,51,.16),rgba(14,42,31,.96));border:2px solid rgba(255,204,51,.7);border-radius:14px;padding:12px 14px;color:var(--gold);font-weight:900;font-size:13px;}
   .ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--gold);border-radius:12px;background:linear-gradient(90deg,rgba(255,204,51,.14),rgba(14,42,31,.92));padding:9px 0;margin-bottom:14px;}
-  .ticker-track{display:inline-block;padding-inline-start:100%;animation:ticker-scroll 24s linear infinite;}
+  .ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 20s linear infinite;}
   .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
   .ticker-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--chalk);margin-inline-end:34px;}
   .ticker-item b{color:var(--gold);font-family:Oswald;}
-  @keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+  @keyframes ticker-scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
   .status-open{background:rgba(47,191,113,.15);color:var(--green-ok);border:1px solid var(--green-ok);}
   .status-locked{background:rgba(226,72,61,.12);color:var(--red);border:1px solid var(--red);}
   .status-pending{background:rgba(255,255,255,.05);color:var(--chalk-dim);border:1px solid var(--pitch-line);}
