@@ -90,6 +90,11 @@
   .ticker-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--chalk);margin-inline-end:34px;}
   .ticker-item b{color:var(--gold);font-family:Oswald;}
   @keyframes ticker-scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+  .notice-ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--red);border-radius:12px;background:linear-gradient(90deg,rgba(226,72,61,.16),rgba(14,42,31,.92));padding:9px 0;margin-bottom:14px;}
+  .notice-ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 18s linear infinite;}
+  .notice-ticker-wrap:hover .notice-ticker-track{animation-play-state:paused;}
+  .notice-ticker-item{font-size:12.5px;font-weight:800;color:var(--chalk);}
+  .notice-ticker-item b{color:var(--red);}
   .status-open{background:rgba(47,191,113,.15);color:var(--green-ok);border:1px solid var(--green-ok);}
   .status-locked{background:rgba(226,72,61,.12);color:var(--red);border:1px solid var(--red);}
   .status-pending{background:rgba(255,255,255,.05);color:var(--chalk-dim);border:1px solid var(--pitch-line);}
@@ -497,12 +502,16 @@ async function renderMatches(){
     ).join('');
     return `<div class="ticker-wrap"><div class="ticker-track">${items}${items}</div></div>`;
   }
+  function accessNoticeTickerHtml(){
+    return `<div class="notice-ticker-wrap"><div class="notice-ticker-track"><span class="notice-ticker-item">⚠️ <b>تنبيه:</b> إذا واجهت مشكلة في الدخول باسمك (طُلب منك رمز ولا تملكه) — تواصل مع المشرف مباشرة ليعطيك رمزك الخاص. بياناتك وتوقعاتك محفوظة ولن تتأثر.</span></div></div>`;
+  }
   let html = `
     <div class="topbar">
       <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
       <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button><button class="navbtn" id="hofBtn">🏅 الأبطال</button><a class="navbtn" href="./knockout.html">🏆 الأدوار الإقصائية</a>
     </div>
     ${topPlayersTickerHtml()}
+    ${accessNoticeTickerHtml()}
     <a href="./knockout.html" style="display:block;text-decoration:none;background:linear-gradient(180deg,rgba(255,204,51,.16),rgba(14,42,31,.96));border:2px solid rgba(255,204,51,.7);border-radius:14px;padding:12px 14px;margin-bottom:14px;text-align:center;color:var(--gold);font-weight:900;font-size:14px;">
       🏆 صوّت الآن على أدوار ربع/نصف النهائي والنهائي ‹ اضغط هنا
     </a>
