@@ -340,6 +340,7 @@ async function init(){
 }
 function render(){
   if(state.view === 'name') return renderName();
+  if(state.view === 'codeReveal') return renderCodeReveal();
   if(state.view === 'matches') return renderMatches();
   if(state.view === 'leaderboard') return renderLeaderboard();
   if(state.view === 'hof') return renderHallOfFame();
@@ -401,7 +402,10 @@ function renderName(){
       <div class="fieldwrap">
         <label>اكتب اسمك للمشاركة</label>
         <input type="text" id="nameInput" placeholder="مثال: أحمد">
-        <button class="btn btn-gold" id="startBtn">🔮 ابدأ المشاركة</button>
+        <label style="margin-top:10px;">الرمز (فقط إن كنت مسجلاً من قبل)</label>
+        <input type="text" id="codeInput" placeholder="مثال: 482" maxlength="3" inputmode="numeric">
+        <div class="note" style="margin-top:8px;">⚠️ إذا ظهرت رسالة "هذا الاسم مسجّل" ولا تملك رمزًا: تواصل مع المشرف مباشرة ليعطيك رمزك الخاص.</div>
+        <button class="btn btn-gold" id="startBtn" style="margin-top:10px;">🔮 ابدأ المشاركة</button>
       </div>
       <div class="note" style="margin-top:16px;">إعداد: أبو الهيثم</div>
     </div>
@@ -409,20 +413,44 @@ function renderName(){
   applySavedLogo();
   document.getElementById('startBtn').onclick = async ()=>{
     const v = document.getElementById('nameInput').value.trim();
+    const codeEntered = document.getElementById('codeInput').value.trim();
     if(!v){ toast('اكتب اسمك الأول 🙂'); return; }
     const key = normalizeName(v);
     if(!key){ toast('اكتب اسمًا صحيحًا'); return; }
     const existingIdentity = await sget(`identity:${key}`, true);
     if(existingIdentity){
+      if(!existingIdentity.code){
+        localStorage.setItem('wc2026-player-key', key);
+        state.name = existingIdentity.name; state.nameKey = key; state.view = 'matches'; render();
+        return;
+      }
+      if(!codeEntered){ toast('هذا الاسم مسجّل — اكتب رمزك المكوّن من 3 أرقام للدخول'); return; }
+      if(codeEntered !== existingIdentity.code){ toast('الرمز غير صحيح ❌'); return; }
       localStorage.setItem('wc2026-player-key', key);
       state.name = existingIdentity.name; state.nameKey = key; state.view = 'matches'; render();
       return;
     }
-    const ok1 = await sset(`identity:${key}`, { name: v, registeredAt: Date.now() }, true);
+    const newCode = String(Math.floor(100 + Math.random()*900));
+    const ok1 = await sset(`identity:${key}`, { name: v, code: newCode, registeredAt: Date.now() }, true);
     if(!ok1){ toast('تعذّر حفظ الاسم. تأكد من Supabase.'); return; }
     localStorage.setItem('wc2026-player-key', key);
-    state.name = v; state.nameKey = key; state.view = 'matches'; render();
+    state.name = v; state.nameKey = key; state.pendingCode = newCode; state.view = 'codeReveal'; render();
   };
+}
+function renderCodeReveal(){
+  $app.innerHTML = `
+    <div class="topbar"><div class="brand"><span class="trophy">🏆</span> توقعات المونديال 2026</div></div>
+    <div class="hero" style="text-align:center;">
+      <h1>مرحبًا <span>${escapeHtml(state.name)}</span> 🎉</h1>
+      <div class="mini-box" style="border:2px solid var(--gold); margin:20px auto; max-width:280px;">
+        <b>🔑 رمزك الخاص — احفظه الآن</b>
+        <div style="font-family:Oswald; font-size:38px; font-weight:900; color:var(--gold); letter-spacing:6px; margin:14px 0;">${escapeHtml(state.pendingCode)}</div>
+        <div class="note">استخدم هذا الرمز مع اسمك <b>"${escapeHtml(state.name)}"</b> للدخول لاحقًا من أي جهاز آخر. بدونه لن تستطيع الدخول باسمك من جهاز جديد.</div>
+      </div>
+      <button class="btn btn-gold" id="continueBtn">فهمت، تابع للتصويت 🔮</button>
+    </div>
+  `;
+  document.getElementById('continueBtn').onclick = ()=>{ state.view='matches'; render(); };
 }
 
 /* ---------------- Matches list ---------------- */
@@ -706,6 +734,20 @@ async function renderAdmin(){
   const actualScores = (await sget('actual-scores', true)) || {};
 
   const allPreds = (await getAllPredictions('predictions:')) || [];
+  const allIdentities = ((await getAllPredictions('identity:')) || []).sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+
+  function codesTableHtml(){
+    const missingCount = allIdentities.filter(idn => !idn.code).length;
+    const rows = allIdentities.map(idn =>
+      `<tr><td style="padding:6px 8px;">${escapeHtml(idn.name)}</td><td style="padding:6px 8px; font-family:Oswald; color:var(--gold); font-weight:900;">${idn.code ? escapeHtml(idn.code) : '— (قديم بلا رمز)'}</td></tr>`
+    ).join('');
+    return `
+      <details class="mini-box" style="margin-bottom:14px;">
+        <summary style="cursor:pointer; font-weight:900;">🔑 الأسماء والرموز (${allIdentities.length}) — اضغط للعرض</summary>
+        ${missingCount > 0 ? `<button class="btn btn-gold" id="backfillCodesBtn" style="margin:10px 0;">🔧 توليد رموز لكل من ليس لديه رمز (${missingCount})</button>` : ''}
+        <table style="width:100%; margin-top:10px; font-size:13px;"><tbody>${rows}</tbody></table>
+      </details>`;
+  }
 
   function getVoteStats(matchId, winnerCode){
     const votes = {};
@@ -727,6 +769,7 @@ async function renderAdmin(){
 
   let html = `
     <div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">🔒 لوحة المشرف</div></div>
+    ${codesTableHtml()}
     <div class="banner">سجّل النتيجة الرسمية بعد المباراة. التصويتات القديمة محفوظة ولن تتغير.</div>
     <div class="fieldwrap">
       <label>رفع لوجو البطولة / كأس العالم للخلفية المائية</label>
@@ -813,6 +856,21 @@ async function renderAdmin(){
 
   $app.innerHTML = html;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
+  if(document.getElementById('backfillCodesBtn')){
+    document.getElementById('backfillCodesBtn').onclick = async ()=>{
+      let count = 0;
+      for(const idn of allIdentities){
+        if(!idn.code){
+          const key = normalizeName(idn.name);
+          const newCode = String(Math.floor(100 + Math.random()*900));
+          await sset(`identity:${key}`, { ...idn, code: newCode }, true);
+          count++;
+        }
+      }
+      toast(`تم توليد ${count} رمز جديد ✅`);
+      renderAdmin();
+    };
+  }
   document.getElementById('showResetBtn').onclick = ()=>{
     document.getElementById('resetActualBtn').style.display = 'block';
     toast('ظهر زر التصفير. اضغطه فقط إذا كنت متأكدًا.');
