@@ -414,7 +414,8 @@ function renderName(){
     if(!key){ toast('اكتب اسمًا صحيحًا'); return; }
     const existingIdentity = await sget(`identity:${key}`, true);
     if(existingIdentity){
-      toast(`الاسم "${existingIdentity.name}" مسجّل بالفعل — استخدم لقبًا للتمييز`);
+      localStorage.setItem('wc2026-player-key', key);
+      state.name = existingIdentity.name; state.nameKey = key; state.view = 'matches'; render();
       return;
     }
     const ok1 = await sset(`identity:${key}`, { name: v, registeredAt: Date.now() }, true);
