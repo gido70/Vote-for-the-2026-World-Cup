@@ -676,7 +676,13 @@ async function renderHallOfFame(){
     return { name: p.name, correct, voted };
   });
   const ranked = scored.filter(p => p.voted > 0).sort((a,b) => (b.correct - a.correct) || (b.voted - a.voted));
-  const top3 = ranked.slice(0, 3);
+  let rank = 0, prevKey = null;
+  ranked.forEach((p,i) => {
+    const key = p.correct + '-' + p.voted;
+    if(key !== prevKey){ rank = i + 1; prevKey = key; }
+    p.rank = rank;
+  });
+  const top3 = ranked.filter(p => p.rank <= 3);
 
   let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">🏅 الأبطال</div></div>`;
   html += `<div class="hof-hero">
@@ -689,8 +695,8 @@ async function renderHallOfFame(){
     html += `<div class="note">لم تُحسم أي مباراة بعد — أول الأبطال يظهرون هنا فور اعتماد أول نتيجة.</div>`;
   } else {
     const medals = ['🥇','🥈','🥉'];
-    html += `<div class="hof-grid">` + top3.map((p,i) =>
-      `<div class="hof-badge"><span class="hof-medal">${medals[i]}</span><span class="hof-badge-name">${escapeHtml(p.name)}</span><span class="hof-badge-sub">${p.correct}/${decidedMatches} صحيح</span></div>`
+    html += `<div class="hof-grid">` + top3.map(p =>
+      `<div class="hof-badge"><span class="hof-medal">${medals[p.rank-1]}</span><span class="hof-badge-name">${escapeHtml(p.name)}</span><span class="hof-badge-sub">${p.correct}/${decidedMatches} صحيح</span></div>`
     ).join('') + `</div>`;
   }
   html += `</div>`;
