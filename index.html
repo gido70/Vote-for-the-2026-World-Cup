@@ -675,29 +675,29 @@ async function renderHallOfFame(){
     });
     return { name: p.name, correct, voted };
   });
-  const perfect = decidedMatches > 0 ? scored.filter(p => p.voted === decidedMatches && p.correct === decidedMatches) : [];
+  const ranked = scored.filter(p => p.voted > 0).sort((a,b) => (b.correct - a.correct) || (b.voted - a.voted));
+  const top3 = ranked.slice(0, 3);
 
   let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">🏅 الأبطال</div></div>`;
   html += `<div class="hof-hero">
       <div class="hof-hero-title">🏅 قائمة الأبطال</div>
-      <div class="hof-hero-sub">مَن حصلوا على الدرجة الكاملة حتى الآن — تُحدَّث تلقائيًا بعد كل مباراة</div>
+      <div class="hof-hero-sub">أفضل 3 في الترتيب حتى الآن — تتغيّر تلقائيًا مع كل نتيجة جديدة</div>
     </div>`;
   html += `<div class="hof-section">
       <div class="hof-section-title">⚽ دور الـ16 <span class="hof-count">${decidedMatches} مباراة محسومة من ${MATCHES.length}</span></div>`;
-  if(decidedMatches === 0){
+  if(decidedMatches === 0 || top3.length === 0){
     html += `<div class="note">لم تُحسم أي مباراة بعد — أول الأبطال يظهرون هنا فور اعتماد أول نتيجة.</div>`;
-  } else if(perfect.length === 0){
-    html += `<div class="note">لا يوجد حتى الآن من حقّق الدرجة الكاملة في كل المباريات المحسومة.</div>`;
   } else {
-    html += `<div class="hof-grid">` + perfect.map(p =>
-      `<div class="hof-badge"><span class="hof-medal">🏅</span><span class="hof-badge-name">${escapeHtml(p.name)}</span><span class="hof-badge-sub">${p.correct}/${decidedMatches} صحيح</span></div>`
+    const medals = ['🥇','🥈','🥉'];
+    html += `<div class="hof-grid">` + top3.map((p,i) =>
+      `<div class="hof-badge"><span class="hof-medal">${medals[i]}</span><span class="hof-badge-name">${escapeHtml(p.name)}</span><span class="hof-badge-sub">${p.correct}/${decidedMatches} صحيح</span></div>`
     ).join('') + `</div>`;
   }
   html += `</div>`;
   html += `<a href="./knockout.html" class="hof-cta">🏆 أبطال ربع/نصف النهائي والنهائي يظهرون في صفحة الأدوار الإقصائية ‹ اضغط هنا</a>`;
   $app.innerHTML = html;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
-  if(perfect.length) burstCelebration(0.4);
+  if(top3.length) burstCelebration(0.4);
 }
 
 /* ---------------- Admin panel ---------------- */
