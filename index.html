@@ -254,7 +254,7 @@ function matchById(id){ return MATCHES.find(m=>m.id===id); }
 function normalizeName(raw){
   return raw.trim().replace(/[\u064B-\u0652\u0640]/g,'').replace(/[إأآا]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\s+/g,' ').toLowerCase();
 }
-let state = { view:'loading', name:'' };
+let state = { view:'loading', name:'', isAdmin:false };
 const $app = document.getElementById('app');
 
 function escapeHtml(str){
@@ -508,7 +508,7 @@ async function renderMatches(){
   let html = `
     <div class="topbar">
       <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
-      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button><button class="navbtn" id="hofBtn">🏅 الأبطال</button><a class="navbtn" href="./knockout.html">🏆 الأدوار الإقصائية</a>
+      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button><button class="navbtn" id="hofBtn">🏅 الأبطال</button>${state.isAdmin ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button>` : ''}<a class="navbtn" href="./knockout.html">🏆 الأدوار الإقصائية</a>
     </div>
     ${topPlayersTickerHtml()}
     ${accessNoticeTickerHtml()}
@@ -589,8 +589,12 @@ async function renderMatches(){
   window.scrollTo(0, scrollY);
   document.getElementById('lbBtn').onclick = ()=>{ state.view='leaderboard'; render(); };
   document.getElementById('hofBtn').onclick = ()=>{ state.view='hof'; render(); };
+  if(document.getElementById('adminJump')){
+    document.getElementById('adminJump').onclick = ()=>{ state.view='admin'; render(); };
+  }
   document.getElementById('adminEntry').onclick = async ()=>{
     if(!(await askPinAsync())){ toast('رمز غير صحيح ❌'); return; }
+    state.isAdmin = true;
     state.view = 'admin'; render();
   };
   $app.querySelectorAll('.vote-btn').forEach(btn=>{
@@ -657,7 +661,7 @@ async function renderLeaderboard(){
   );
 
   const topScore = scored.length ? scored[0].score : 0;
-  let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📊 لوحة الترتيب</div></div>
+  let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📊 لوحة الترتيب</div>${state.isAdmin ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button>` : ''}</div>
   <div class="banner">🏆 الترتيب يعتمد على النقاط، ثم عدد التوقعات الصحيحة، ثم عدد المباريات التي شارك فيها المتسابق. المباريات المحسومة حتى الآن: <b>${decidedMatches}</b></div>`;
 
   scored.forEach((p,i)=>{
@@ -683,6 +687,9 @@ async function renderLeaderboard(){
 
   $app.innerHTML = html;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
+  if(document.getElementById('adminJump')){
+    document.getElementById('adminJump').onclick = ()=>{ state.view='admin'; render(); };
+  }
   if(actual['final'] && scored.length) burstCelebration(0.6);
 }
 
@@ -714,7 +721,7 @@ async function renderHallOfFame(){
   });
   const top3 = ranked.filter(p => p.rank <= 3);
 
-  let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">🏅 الأبطال</div></div>`;
+  let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">🏅 الأبطال</div>${state.isAdmin ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button>` : ''}</div>`;
   html += `<div class="hof-hero">
       <div class="hof-hero-title">🏅 قائمة الأبطال</div>
       <div class="hof-hero-sub">أفضل 3 في الترتيب حتى الآن — تتغيّر تلقائيًا مع كل نتيجة جديدة</div>
@@ -733,6 +740,9 @@ async function renderHallOfFame(){
   html += `<a href="./knockout.html" class="hof-cta">🏆 أبطال ربع/نصف النهائي والنهائي يظهرون في صفحة الأدوار الإقصائية ‹ اضغط هنا</a>`;
   $app.innerHTML = html;
   document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
+  if(document.getElementById('adminJump')){
+    document.getElementById('adminJump').onclick = ()=>{ state.view='admin'; render(); };
+  }
   if(top3.length) burstCelebration(0.4);
 }
 
@@ -966,13 +976,45 @@ async function renderAdmin(){
   if(people.length===0){
     list.innerHTML = `<div class="empty-note">لا يوجد أسماء مسجّلة بعد.</div>`;
   } else {
+    function participantDetailHtml(key){
+      const pred = allPreds.find(p => normalizeName(p.name) === key);
+      const picks = pred && pred.picks ? pred.picks : {};
+      if(!Object.keys(picks).length) return `<div class="note" style="padding:10px 0;">لم يشارك في أي مباراة بعد.</div>`;
+      const rows = MATCHES.map(m=>{
+        const pick = picks[m.id];
+        if(!pick) return '';
+        const result = actual[m.id];
+        const team = TEAMS[pick];
+        let status = '⏳ لم تُحسم بعد';
+        if(result) status = (result === pick) ? '✅ صحيح' : '❌ خطأ';
+        return `<tr><td style="padding:5px 8px;">${m.venue || m.id}</td><td style="padding:5px 8px;">${team ? team.flag+' '+team.name : pick}</td><td style="padding:5px 8px;">${status}</td></tr>`;
+      }).join('');
+      return `<table style="width:100%; font-size:12.5px; margin-top:8px;"><tbody>${rows}</tbody></table>`;
+    }
     list.innerHTML = people.map(p=>`
-      <div class="lb-row"><div class="lb-name">${escapeHtml(p.name)}</div><button class="navbtn" data-delkey="${escapeHtml(p.key)}" data-delname="${escapeHtml(p.name)}">حذف نهائيًا</button></div>
+      <div class="lb-row" style="flex-direction:column; align-items:stretch;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div class="lb-name" style="cursor:pointer; text-decoration:underline dotted;" data-togglekey="${escapeHtml(p.key)}">${escapeHtml(p.name)}</div>
+          <button class="navbtn" data-delkey="${escapeHtml(p.key)}" data-delname="${escapeHtml(p.name)}">حذف نهائيًا</button>
+        </div>
+        <div class="participant-detail" data-detailkey="${escapeHtml(p.key)}" style="display:none;"></div>
+      </div>
     `).join('');
+    list.querySelectorAll('[data-togglekey]').forEach(nameEl=>{
+      nameEl.onclick = ()=>{
+        const key = nameEl.getAttribute('data-togglekey');
+        const detailEl = list.querySelector(`[data-detailkey="${CSS.escape(key)}"]`);
+        const isOpen = detailEl.style.display !== 'none';
+        list.querySelectorAll('.participant-detail').forEach(d=>d.style.display='none');
+        if(!isOpen){ detailEl.innerHTML = participantDetailHtml(key); detailEl.style.display = 'block'; }
+      };
+    });
     list.querySelectorAll('[data-delkey]').forEach(btn=>{
       btn.onclick = async ()=>{
         const key = btn.getAttribute('data-delkey');
         const name = btn.getAttribute('data-delname');
+        const ok = confirm(`تحذير: سيتم حذف "${name}" نهائيًا مع كل توقعاته. لا يمكن التراجع. هل أنت متأكد؟`);
+        if(!ok) return;
         await sdel(`identity:${key}`, true);
         await sdel(`predictions:${key}`, true);
         toast(`تم حذف "${name}" نهائيًا`);
