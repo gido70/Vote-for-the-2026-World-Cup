@@ -28,9 +28,9 @@
   body{
     font-family:'Tajawal',sans-serif;
     background:
-      radial-gradient(ellipse at 15% 0%, rgba(20,184,196,.12), transparent 55%),
-      radial-gradient(ellipse at 100% 10%, rgba(236,72,153,.12), transparent 55%),
-      linear-gradient(180deg, #f3f8ff 0%, #fdf6fb 100%);
+      radial-gradient(ellipse at 15% 0%, rgba(20,184,196,.22), transparent 55%),
+      radial-gradient(ellipse at 100% 10%, rgba(236,72,153,.18), transparent 55%),
+      linear-gradient(160deg, #cfe3fb 0%, #e7f0fd 45%, #f8eefb 100%);
     color:var(--chalk); min-height:100%; overflow-x:hidden;
   }
   body::before{
@@ -56,7 +56,7 @@
   .hero h1{font-size:24px;margin:6px 0 4px;font-weight:900;line-height:1.35;color:var(--chalk);}
   .hero h1 span{color:var(--purple);}
   .hero p{color:var(--chalk-dim);font-size:13.5px;margin:0 0 16px;line-height:1.7;}
-  .fieldwrap{background:var(--card);border:1px solid var(--pitch-line);border-radius:16px;padding:16px;margin-bottom:12px;text-align:right;box-shadow:0 6px 20px rgba(20,40,80,.06);}
+  .fieldwrap{background:var(--card);border:1px solid var(--pitch-line);border-radius:16px;padding:16px;margin-bottom:12px;text-align:right;box-shadow:0 6px 20px rgba(37,99,235,.10);}
   label{display:block;font-size:12px;color:var(--chalk-dim);margin-bottom:8px;}
   input[type=text], input[type=file]{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--pitch-line);background:#f8fafc;color:var(--chalk);font-family:'Tajawal';font-size:15px;font-weight:700;}
   input[type=text]:focus{outline:2px solid var(--blue);}
@@ -68,7 +68,7 @@
   .round-header{display:flex;align-items:center;gap:8px;margin:20px 0 10px;}
   .round-header .line{flex:1;height:1px;background:var(--pitch-line);}
   .round-header .lbl{font-size:12px;font-weight:700;color:var(--gold-deep);white-space:nowrap;}
-  .match-card{background:var(--card);border:1px solid var(--pitch-line);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 4px 16px rgba(20,40,80,.06);}
+  .match-card{background:var(--card);border:1px solid var(--pitch-line);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 4px 16px rgba(37,99,235,.10);}
   .match-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--chalk-dim);margin-bottom:10px;gap:8px;}
   .status-pill{font-size:10.5px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap;}
   .vote-summary{margin-top:10px;padding-top:10px;border-top:1px dashed var(--pitch-line);}
@@ -85,7 +85,7 @@
   .hof-section-title{font-weight:900;color:var(--gold-deep);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:14px;}
   .hof-count{font-size:10.5px;color:var(--chalk-dim);font-weight:600;}
   .hof-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;}
-  .hof-badge{background:var(--card);border:1.5px solid var(--gold-deep);border-radius:14px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 4px 14px rgba(20,40,80,.06);}
+  .hof-badge{background:var(--card);border:1.5px solid var(--gold-deep);border-radius:14px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 4px 14px rgba(37,99,235,.10);}
   .hof-medal{font-size:22px;}
   .hof-badge-name{font-weight:800;font-size:12.5px;color:var(--chalk);}
   .hof-badge-sub{font-size:10px;color:var(--gold-deep);}
@@ -115,7 +115,7 @@
   .team-row.static{cursor:default;background:#f1f5f9;}
   .vs-label{text-align:center;color:var(--chalk-dim);font-size:10.5px;font-weight:700;letter-spacing:2px;margin:2px 0;}
   .note{font-size:11.5px;color:var(--chalk-dim);text-align:center;margin-top:6px;line-height:1.7;}
-  .lb-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--pitch-line);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 4px 14px rgba(20,40,80,.06);}
+  .lb-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--pitch-line);border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 4px 14px rgba(37,99,235,.10);}
   .lb-rank{font-family:'Oswald';font-weight:700;font-size:16px;color:var(--gold-deep);width:22px;text-align:center;}
   .lb-name{font-weight:700;font-size:14.5px;flex:1;}
   .lb-champ{font-size:20px;}
@@ -136,14 +136,14 @@
     border-radius:18px;
     padding:14px;
     margin:12px 0 14px;
-    box-shadow:0 10px 26px rgba(20,40,80,.07);
+    box-shadow:0 10px 26px rgba(124,58,237,.10);
   }
   .promo-title{text-align:center;color:var(--purple);font-weight:900;font-size:18px;margin:0 0 10px;}
   .promo-grid{display:grid;grid-template-columns:1fr;gap:8px;}
   .mini-box{background:#f8fafc;border:1px solid var(--pitch-line);border-radius:14px;padding:10px;line-height:1.8;font-size:12.5px;color:var(--chalk);}
   .mini-box b{color:var(--gold-deep);}
   .prize-row{display:flex;gap:8px;justify-content:space-between;text-align:center;margin-top:6px;}
-  .prize{flex:1;background:#fff;border:1px solid var(--gold-deep);border-radius:12px;padding:8px 4px;font-weight:900;color:var(--chalk);}
+  .prize{flex:1;background:#fff;border:1px solid var(--gold-deep);border-radius:12px;padding:8px 4px;font-weight:900;color:var(--blue);}
   .prize span{display:block;font-size:22px;margin-bottom:2px;}
   .ticker{
     border:1px solid var(--gold-deep);
