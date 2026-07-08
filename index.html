@@ -158,9 +158,28 @@
     margin:8px 0 12px;
   }
   .lb-stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:5px;}
-  .stat-pill{font-size:10.5px;border:1px solid var(--pitch-line);border-radius:999px;padding:3px 7px;color:var(--chalk-dim);background:#f8fafc;}
-  .stat-pill.good{color:#15803d;border-color:rgba(22,163,74,.45);}
-  .stat-pill.bad{color:#b91c1c;border-color:rgba(220,38,38,.4);}
+  .stat-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px 12px;
+    border-radius:999px;
+    background:linear-gradient(135deg,#0b3d91,#0a2f6b);
+    color:#ffffff;
+    border:1px solid rgba(255,215,106,.65);
+    font-weight:800;
+    font-size:11px;
+    box-shadow:0 3px 10px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.12);
+    text-shadow:none;
+}
+.stat-pill.good{
+    background:linear-gradient(135deg,#0b5cc4,#1274ff);
+    color:#fff;
+}
+.stat-pill.bad{
+    background:linear-gradient(135deg,#123f8f,#0d2d66);
+    color:#fff;
+}
   .hero-logo{
     width:min(230px,68vw);
     display:block;
