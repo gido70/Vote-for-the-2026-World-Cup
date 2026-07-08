@@ -1256,7 +1256,7 @@ async function renderAdmin(){
         const team = TEAMS[pick];
         let status = '⏳ لم تُحسم بعد';
         if(result) status = (result === pick) ? '✅ صحيح' : '❌ خطأ';
-        return `<tr><td style="padding:5px 8px;">${m.venue || m.id}</td><td style="padding:5px 8px;">${team ? team.flag+' '+team.name : pick}</td><td style="padding:5px 8px;">${status}</td></tr>`;
+        return `<tr style="color:#1a2b4a;"><td style="padding:5px 8px;">${m.venue || m.id}</td><td style="padding:5px 8px;">${team ? team.flag+' '+team.name : pick}</td><td style="padding:5px 8px;">${status}</td></tr>`;
       }).join('');
       return `<table style="width:100%; font-size:12.5px; margin-top:8px;"><tbody>${rows}</tbody></table>`;
     }
