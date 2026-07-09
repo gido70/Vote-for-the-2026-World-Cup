@@ -591,6 +591,7 @@ async function init(){
     return;
   }
   await applySavedLogo();
+  if(localStorage.getItem('wc2026-admin-session') === 'true'){ state.isAdmin = true; }
   const savedKey = localStorage.getItem('wc2026-player-key');
   if(savedKey){
     const ident = await sget(`identity:${savedKey}`, true);
@@ -776,10 +777,6 @@ async function renderMatches(){
     </div>
     ${topPlayersTickerHtml()}
     ${accessNoticeTickerHtml()}
-    <a href="./knockout.html" style="display:block;text-decoration:none;background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;border-radius:14px;padding:12px 14px;margin-bottom:14px;text-align:center;color:#fff;font-weight:900;font-size:14px;">
-      🏆 صوّت الآن على أدوار ربع/نصف النهائي والنهائي ‹ اضغط هنا
-
-    </a>
     ${publicInfoCard()}
   `;
   let lastRound = -1;
@@ -861,6 +858,7 @@ async function renderMatches(){
   document.getElementById('adminEntry').onclick = async ()=>{
     if(!(await askPinAsync())){ toast('رمز غير صحيح ❌'); return; }
     state.isAdmin = true;
+    localStorage.setItem('wc2026-admin-session', 'true');
     state.view = 'admin'; render();
   };
   $app.querySelectorAll('.vote-btn').forEach(btn=>{
