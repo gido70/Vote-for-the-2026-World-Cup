@@ -91,16 +91,21 @@
   .hof-badge-name{font-weight:800;font-size:12.5px;color:var(--chalk);}
   .hof-badge-sub{font-size:10px;color:var(--gold-deep);}
   .hof-cta{display:block;text-decoration:none;text-align:center;background:linear-gradient(135deg,var(--purple),var(--pink));border:none;border-radius:14px;padding:12px 14px;color:#fff;font-weight:900;font-size:13px;}
-  .ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--teal);border-radius:12px;background:linear-gradient(90deg,rgba(255,255,255,.95),rgba(255,255,255,.92));padding:9px 0;margin-bottom:14px;box-shadow:0 6px 18px rgba(20,20,60,.12);}
-  .ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 32s linear infinite;}
+  .ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--teal);border-radius:12px;background:linear-gradient(90deg,rgba(255,255,255,.95),rgba(255,255,255,.92));padding:9px 0;margin-bottom:10px;box-shadow:0 6px 18px rgba(20,20,60,.12);}
+  .ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 15s linear infinite;}
   .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
   .ticker-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--chalk);margin-inline-end:34px;}
   .ticker-item b{color:var(--blue);font-family:Oswald;}
   @keyframes ticker-scroll{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-  .notice-ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--red);border-radius:12px;background:rgba(255,255,255,.94);padding:9px 0;margin-bottom:14px;box-shadow:0 6px 18px rgba(20,20,60,.12);}
-  .notice-ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 30s linear infinite;}
+  .notice-ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--red);border-radius:12px;background:rgba(255,255,255,.94);padding:9px 0;margin-bottom:10px;box-shadow:0 6px 18px rgba(20,20,60,.12);}
+  .notice-ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 15s linear infinite;}
   .notice-ticker-wrap:hover .notice-ticker-track{animation-play-state:paused;}
   .notice-ticker-item{font-size:12.5px;font-weight:800;color:var(--chalk);}
+  .champs-ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--purple);border-radius:12px;background:linear-gradient(90deg,rgba(124,58,237,.10),rgba(236,72,153,.08));padding:9px 0;margin-bottom:14px;box-shadow:0 6px 18px rgba(124,58,237,.15);}
+  .champs-ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 15s linear infinite;}
+  .champs-ticker-wrap:hover .champs-ticker-track{animation-play-state:paused;}
+  .champs-ticker-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--chalk);margin-inline-end:34px;}
+  .champs-ticker-item b{color:var(--purple);font-family:Oswald;}
   .notice-ticker-item b{color:var(--red);}
   .status-open{background:rgba(22,163,74,.12);color:#15803d;border:1px solid rgba(22,163,74,.4);}
   .status-locked{background:rgba(220,38,38,.10);color:#b91c1c;border:1px solid rgba(220,38,38,.35);}
@@ -724,6 +729,8 @@ async function renderMatches(){
   const actual = await getActual();
   const myPicks = await getMyPicks();
   const allPreds = (await getAllPredictions('predictions:')) || [];
+  const koPredsForTicker = (await getAllPredictions('ko-predictions:')) || [];
+  const koScoresForTicker = (await sget('ko-actual-scores', true)) || {};
   function voteCounts(matchId, teamA, teamB){
     let a = 0, b = 0;
     allPreds.forEach(p=>{
@@ -759,10 +766,48 @@ async function renderMatches(){
     const items = scored.slice(0,5).map((p,i)=>
       `<span class="ticker-item">${medals[i]||'🏅'} ${escapeHtml(p.name)} <b>${p.pts} نقطة</b></span>`
     ).join('');
-    return `<div class="ticker-wrap"><div class="ticker-track">${items}${items}</div></div>`;
+    return `<div class="ticker-wrap"><div class="ticker-track">${items}${items}${items}</div></div>`;
   }
   function accessNoticeTickerHtml(){
     return `<div class="notice-ticker-wrap"><div class="notice-ticker-track"><span class="notice-ticker-item">⚠️ <b>تنبيه:</b> إذا واجهت مشكلة في الدخول باسمك (طُلب منك رمز ولا تملكه) — تواصل مع المشرف مباشرة ليعطيك رمزك الخاص. بياناتك وتوقعاتك محفوظة ولن تتأثر.</span></div></div>`;
+  }
+  function finalChampsTickerHtml(){
+    const KO_WEIGHTS = { qf1:2, qf2:2, qf3:2, qf4:2, sf1:4, sf2:4, third:3, final:8 };
+    const EXACT_BONUS = 2;
+    const byKey = {};
+    allPreds.forEach(p=>{
+      const key = normalizeName(p.name);
+      if(!byKey[key]) byKey[key] = { name: p.name, total: 0 };
+      let pts = 0;
+      MATCHES.forEach(m=>{
+        const result = actual[m.id], pick = p.picks ? p.picks[m.id] : null;
+        if(result && pick && result === pick) pts += 1;
+      });
+      byKey[key].total += pts;
+      byKey[key].name = p.name;
+    });
+    koPredsForTicker.forEach(p=>{
+      const key = normalizeName(p.name);
+      if(!byKey[key]) byKey[key] = { name: p.name, total: 0 };
+      let pts = 0;
+      Object.keys(KO_WEIGHTS).forEach(id=>{
+        const result = actual[id], pick = p.picks ? p.picks[id] : null;
+        if(result && pick && pick.winner === result){
+          pts += KO_WEIGHTS[id];
+          const sc = koScoresForTicker[id];
+          if(sc && String(sc.a) === String(pick.a) && String(sc.b) === String(pick.b)) pts += EXACT_BONUS;
+        }
+      });
+      byKey[key].total += pts;
+      byKey[key].name = p.name;
+    });
+    const combined = Object.values(byKey).filter(x=>x.total>0).sort((a,b)=>b.total-a.total);
+    if(!combined.length) return '';
+    const medals=['🥇','🥈','🥉','🏆','🏆'];
+    const items = combined.slice(0,5).map((p,i)=>
+      `<span class="champs-ticker-item">${medals[i]||'🏆'} ${escapeHtml(p.name)} <b>${p.total} نقطة كلية</b></span>`
+    ).join('');
+    return `<div class="champs-ticker-wrap"><div class="champs-ticker-track">${items}${items}${items}</div></div>`;
   }
   let html = `
     <div class="topbar">
@@ -773,10 +818,13 @@ async function renderMatches(){
       <a class="navbtn" href="./knockout.html">⚔️ الأدوار الإقصائية</a>
       <button class="navbtn" id="hofBtn">🏅 أبطال دور الـ16</button>
       <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button>
-      ${state.isAdmin ? `<button class="navbtn" id="adminJump" style="grid-column:1/-1;">🔒 لوحة الأدمن</button>` : ''}
+      ${state.isAdmin
+        ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button><button class="navbtn" id="adminLogout" style="background:linear-gradient(135deg,#64748b,#334155) !important;">🚪 خروج الأدمن</button>`
+        : `<button class="navbtn" id="adminEntry" style="grid-column:1/-1;">🔒 دخول المشرف</button>`}
     </div>
     ${topPlayersTickerHtml()}
     ${accessNoticeTickerHtml()}
+    ${finalChampsTickerHtml()}
     ${publicInfoCard()}
   `;
   let lastRound = -1;
@@ -845,8 +893,7 @@ async function renderMatches(){
     }
     html += `</div>`;
   });
-  html += `<button class="btn-ghost" id="adminEntry">🔒 دخول المشرف</button>
-    <div class="note" style="margin-top:10px;">إعداد: أبو الهيثم</div>`;
+  html += `<div class="note" style="margin-top:10px;">إعداد: أبو الهيثم</div>`;
   $app.innerHTML = html;
   window.scrollTo(0, scrollY);
   document.getElementById('lbBtn').onclick = ()=>{ state.view='leaderboard'; render(); };
@@ -855,12 +902,22 @@ async function renderMatches(){
   if(document.getElementById('adminJump')){
     document.getElementById('adminJump').onclick = ()=>{ state.view='admin'; render(); };
   }
-  document.getElementById('adminEntry').onclick = async ()=>{
-    if(!(await askPinAsync())){ toast('رمز غير صحيح ❌'); return; }
-    state.isAdmin = true;
-    localStorage.setItem('wc2026-admin-session', 'true');
-    state.view = 'admin'; render();
-  };
+  if(document.getElementById('adminLogout')){
+    document.getElementById('adminLogout').onclick = ()=>{
+      state.isAdmin = false;
+      localStorage.removeItem('wc2026-admin-session');
+      toast('تم الخروج من وضع الأدمن ✅');
+      state.view = 'matches'; render();
+    };
+  }
+  if(document.getElementById('adminEntry')){
+    document.getElementById('adminEntry').onclick = async ()=>{
+      if(!(await askPinAsync())){ toast('رمز غير صحيح ❌'); return; }
+      state.isAdmin = true;
+      localStorage.setItem('wc2026-admin-session', 'true');
+      state.view = 'admin'; render();
+    };
+  }
   $app.querySelectorAll('.vote-btn').forEach(btn=>{
     btn.onclick = async ()=>{
       const matchId = btn.getAttribute('data-match');
