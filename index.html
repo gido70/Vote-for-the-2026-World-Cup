@@ -92,17 +92,17 @@
   .hof-badge-sub{font-size:10px;color:var(--gold-deep);}
   .hof-cta{display:block;text-decoration:none;text-align:center;background:linear-gradient(135deg,var(--purple),var(--pink));border:none;border-radius:14px;padding:12px 14px;color:#fff;font-weight:900;font-size:13px;}
   .ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--teal);border-radius:12px;background:linear-gradient(90deg,rgba(255,255,255,.95),rgba(255,255,255,.92));padding:9px 0;margin-bottom:10px;box-shadow:0 6px 18px rgba(20,20,60,.12);}
-  .ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 15s linear infinite;}
+  .ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 22s linear infinite;}
   .ticker-wrap:hover .ticker-track{animation-play-state:paused;}
   .ticker-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--chalk);margin-inline-end:34px;}
   .ticker-item b{color:var(--blue);font-family:Oswald;}
   @keyframes ticker-scroll{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
   .notice-ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--red);border-radius:12px;background:rgba(255,255,255,.94);padding:9px 0;margin-bottom:10px;box-shadow:0 6px 18px rgba(20,20,60,.12);}
-  .notice-ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 15s linear infinite;}
+  .notice-ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 22s linear infinite;}
   .notice-ticker-wrap:hover .notice-ticker-track{animation-play-state:paused;}
   .notice-ticker-item{font-size:12.5px;font-weight:800;color:var(--chalk);}
   .champs-ticker-wrap{overflow:hidden;white-space:nowrap;border:1.5px solid var(--purple);border-radius:12px;background:linear-gradient(90deg,rgba(124,58,237,.10),rgba(236,72,153,.08));padding:9px 0;margin-bottom:14px;box-shadow:0 6px 18px rgba(124,58,237,.15);}
-  .champs-ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 15s linear infinite;}
+  .champs-ticker-track{display:inline-block;white-space:nowrap;animation:ticker-scroll 22s linear infinite;}
   .champs-ticker-wrap:hover .champs-ticker-track{animation-play-state:paused;}
   .champs-ticker-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--chalk);margin-inline-end:34px;}
   .champs-ticker-item b{color:var(--purple);font-family:Oswald;}
@@ -596,13 +596,16 @@ async function init(){
     return;
   }
   await applySavedLogo();
-  if(localStorage.getItem('wc2026-admin-session') === 'true'){ state.isAdmin = true; }
   const savedKey = localStorage.getItem('wc2026-player-key');
   if(savedKey){
     const ident = await sget(`identity:${savedKey}`, true);
     if(ident && ident.name){ state.name = ident.name; state.nameKey = savedKey; state.view='matches'; }
     else state.view='name';
   } else state.view='name';
+  // جلسة الأدمن مرتبطة بنفس الهوية التي فعّلتها — لا تظهر لأي اسم آخر على نفس الجهاز
+  if(localStorage.getItem('wc2026-admin-session') === 'true' && localStorage.getItem('wc2026-admin-owner') === state.nameKey){
+    state.isAdmin = true;
+  }
   render();
   setInterval(()=>{ if(state.view === 'matches') render(); }, 30000);
 }
@@ -811,7 +814,7 @@ async function renderMatches(){
   }
   let html = `
     <div class="topbar">
-      <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
+      <div class="brand"><span class="trophy">🏆</span> ${state.isAdmin ? `🔒 وضع الأدمن — ${escapeHtml(state.name)}` : `أهلاً ${escapeHtml(state.name)}`}</div>
     </div>
     <div class="nav-grid">
       <button class="navbtn" id="finalChampBtn">🏆 الأبطال النهائيون</button>
@@ -906,6 +909,7 @@ async function renderMatches(){
     document.getElementById('adminLogout').onclick = ()=>{
       state.isAdmin = false;
       localStorage.removeItem('wc2026-admin-session');
+      localStorage.removeItem('wc2026-admin-owner');
       toast('تم الخروج من وضع الأدمن ✅');
       state.view = 'matches'; render();
     };
@@ -915,6 +919,7 @@ async function renderMatches(){
       if(!(await askPinAsync())){ toast('رمز غير صحيح ❌'); return; }
       state.isAdmin = true;
       localStorage.setItem('wc2026-admin-session', 'true');
+      localStorage.setItem('wc2026-admin-owner', state.nameKey);
       state.view = 'admin'; render();
     };
   }
