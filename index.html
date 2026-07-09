@@ -292,6 +292,8 @@ body::after{
   text-shadow:none !important;
 }
 .navbtn{padding:9px 14px !important;font-size:12.5px !important;}
+.nav-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;}
+.nav-grid .navbtn,.nav-grid a.navbtn{width:100%;text-align:center;box-sizing:border-box;padding:11px 8px !important;font-size:12.5px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 a.navbtn,#hofBtn,#adminJump,#adminEntry,#lbBtn{
   background:linear-gradient(135deg,#19f0df 0%,#0b63ff 48%,#ffd76a 100%) !important;
   color:#fff !important;
@@ -764,12 +766,19 @@ async function renderMatches(){
   let html = `
     <div class="topbar">
       <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
-      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button><button class="navbtn" id="hofBtn">🏅 الأبطال</button><button class="navbtn" id="finalChampBtn">🏆 الأبطال النهائيون</button>${state.isAdmin ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button>` : ''}<a class="navbtn" href="./knockout.html">🏆 الأدوار الإقصائية</a>
+    </div>
+    <div class="nav-grid">
+      <button class="navbtn" id="finalChampBtn">🏆 الأبطال النهائيون</button>
+      <a class="navbtn" href="./knockout.html">⚔️ الأدوار الإقصائية</a>
+      <button class="navbtn" id="hofBtn">🏅 أبطال دور الـ16</button>
+      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button>
+      ${state.isAdmin ? `<button class="navbtn" id="adminJump" style="grid-column:1/-1;">🔒 لوحة الأدمن</button>` : ''}
     </div>
     ${topPlayersTickerHtml()}
     ${accessNoticeTickerHtml()}
     <a href="./knockout.html" style="display:block;text-decoration:none;background:linear-gradient(135deg,#7c3aed,#ec4899);border:none;border-radius:14px;padding:12px 14px;margin-bottom:14px;text-align:center;color:#fff;font-weight:900;font-size:14px;">
       🏆 صوّت الآن على أدوار ربع/نصف النهائي والنهائي ‹ اضغط هنا
+
     </a>
     ${publicInfoCard()}
   `;
