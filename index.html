@@ -604,6 +604,7 @@ function render(){
   if(state.view === 'matches') return renderMatches();
   if(state.view === 'leaderboard') return renderLeaderboard();
   if(state.view === 'hof') return renderHallOfFame();
+  if(state.view === 'finalChampions') return renderFinalChampions();
   if(state.view === 'admin') return renderAdmin();
 }
 function renderConfigError(){
@@ -763,7 +764,7 @@ async function renderMatches(){
   let html = `
     <div class="topbar">
       <div class="brand"><span class="trophy">🏆</span> أهلاً ${escapeHtml(state.name)}</div>
-      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button><button class="navbtn" id="hofBtn">🏅 الأبطال</button>${state.isAdmin ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button>` : ''}<a class="navbtn" href="./knockout.html">🏆 الأدوار الإقصائية</a>
+      <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button><button class="navbtn" id="hofBtn">🏅 الأبطال</button><button class="navbtn" id="finalChampBtn">🏆 الأبطال النهائيون</button>${state.isAdmin ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button>` : ''}<a class="navbtn" href="./knockout.html">🏆 الأدوار الإقصائية</a>
     </div>
     ${topPlayersTickerHtml()}
     ${accessNoticeTickerHtml()}
@@ -844,6 +845,7 @@ async function renderMatches(){
   window.scrollTo(0, scrollY);
   document.getElementById('lbBtn').onclick = ()=>{ state.view='leaderboard'; render(); };
   document.getElementById('hofBtn').onclick = ()=>{ state.view='hof'; render(); };
+  document.getElementById('finalChampBtn').onclick = ()=>{ state.view='finalChampions'; render(); };
   if(document.getElementById('adminJump')){
     document.getElementById('adminJump').onclick = ()=>{ state.view='admin'; render(); };
   }
@@ -1013,6 +1015,111 @@ async function renderHallOfFame(){
     document.getElementById('adminJump').onclick = ()=>{ state.view='admin'; render(); };
   }
   if(top3.length) burstCelebration(0.4);
+}
+
+/* ---------------- Final Champions (combined R16 + Knockout) ---------------- */
+async function renderFinalChampions(){
+  $app.innerHTML = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">🏆 الأبطال النهائيون</div>${state.isAdmin ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button>` : ''}</div><div class="banner">جاري التحميل...</div>`;
+
+  const actual = await getActual();
+  const koScores = (await sget('ko-actual-scores', true)) || {};
+  const r16Preds = (await getAllPredictions('predictions:')) || [];
+  const koPreds = (await getAllPredictions('ko-predictions:')) || [];
+
+  // أوزان الأدوار الإقصائية — مطابقة تمامًا لـ ROUND_WEIGHTS في knockout.html
+  const KO_WEIGHTS = { qf1:2, qf2:2, qf3:2, qf4:2, sf1:4, sf2:4, third:3, final:8 };
+  const EXACT_BONUS = 2;
+
+  const byKey = {};
+  r16Preds.forEach(p=>{
+    const key = normalizeName(p.name);
+    if(!byKey[key]) byKey[key] = { name: p.name, r16: 0, ko: 0, r16Voted:0, koVoted:0 };
+    let pts = 0, voted = 0;
+    MATCHES.forEach(m=>{
+      const result = actual[m.id], pick = p.picks ? p.picks[m.id] : null;
+      if(result && pick){ voted++; if(result === pick) pts += 1; }
+    });
+    byKey[key].r16 = pts;
+    byKey[key].r16Voted = voted;
+    byKey[key].name = p.name;
+  });
+  koPreds.forEach(p=>{
+    const key = normalizeName(p.name);
+    if(!byKey[key]) byKey[key] = { name: p.name, r16: 0, ko: 0, r16Voted:0, koVoted:0 };
+    let pts = 0, voted = 0;
+    Object.keys(KO_WEIGHTS).forEach(id=>{
+      const result = actual[id], pick = p.picks ? p.picks[id] : null;
+      if(result && pick){
+        voted++;
+        if(pick.winner === result){
+          pts += KO_WEIGHTS[id];
+          const sc = koScores[id];
+          if(sc && String(sc.a) === String(pick.a) && String(sc.b) === String(pick.b)) pts += EXACT_BONUS;
+        }
+      }
+    });
+    byKey[key].ko = pts;
+    byKey[key].koVoted = voted;
+    byKey[key].name = p.name;
+  });
+
+  const combined = Object.values(byKey)
+    .map(x => ({ ...x, total: x.r16 + x.ko }))
+    .filter(x => x.r16Voted > 0 || x.koVoted > 0)
+    .sort((a,b) => b.total - a.total);
+
+  let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">🏆 الأبطال النهائيون</div>${state.isAdmin ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button>` : ''}</div>`;
+  html += `<div class="hof-hero">
+      <div class="hof-hero-title">🏆 الأبطال النهائيون</div>
+      <div class="hof-hero-sub">الترتيب الكلي — دور الـ16 + كل الأدوار الإقصائية معًا، أساس تحديد الفائزين الثلاثة</div>
+    </div>`;
+  html += `<div class="promo-card">
+      <div class="promo-title">⭐ كيف تُحسب هذه النقاط؟</div>
+      <div class="mini-box">
+        ✔ دور الـ16 = <b>1 نقطة</b> لكل توقع صحيح.<br>
+        ✔ ربع النهائي = <b>2 نقطة</b> لكل توقع صحيح.<br>
+        ✔ نصف النهائي = <b>4 نقاط</b> لكل توقع صحيح.<br>
+        ✔ تحديد المركز الثالث = <b>3 نقاط</b> لكل توقع صحيح.<br>
+        ✔ النهائي = <b>8 نقاط</b> لكل توقع صحيح.<br>
+        🎯 من ربع النهائي فما فوق: <b>+2 نقطة إضافية</b> عند توقع النتيجة بالأهداف بدقة تامة.<br>
+        🥅 عند التعادل، الفائز يُحدَّد بركلات الترجيح — دون أي نقاط إضافية أو منقوصة بسبب ذلك.<br>
+        🏆 <b>الرقم الظاهر هنا لكل شخص = مجموع دور الـ16 + كل الأدوار الإقصائية</b>، وهو ما يحدد فعليًا أصحاب المراكز الثلاثة الأولى.
+      </div>
+    </div>`;
+
+  if(combined.length === 0){
+    html += `<div class="empty-note">لا توجد مشاركات كافية بعد لعرض الترتيب الكلي.</div>`;
+  } else {
+    const medalBg = [
+      'border-color:#c99a1f;background:linear-gradient(100deg,#fff6d8,#ffe9a8);',
+      'border-color:#9aa5b1;background:linear-gradient(100deg,#f5f7f9,#e2e7ec);',
+      'border-color:#b8763f;background:linear-gradient(100deg,#fbe9dc,#f0cdaf);'
+    ];
+    const cycleColors = ['#2563eb','#7c3aed','#ec4899','#14b8c4','#f59e0b','#dc2626'];
+    combined.forEach((p,i)=>{
+      const medal = i===0?'🥇':(i===1?'🥈':(i===2?'🥉':(i+1)));
+      const style = i<3 ? medalBg[i] : '';
+      const nameColor = i<3 ? 'var(--chalk)' : cycleColors[i % cycleColors.length];
+      const title = i===0?'المركز الأول 🏆':(i===1?'المركز الثاني':(i===2?'المركز الثالث':''));
+      html += `<div class="lb-row" style="${style}">
+        <div class="lb-rank">${medal}</div>
+        <div class="lb-name" style="color:${nameColor}">${escapeHtml(p.name)} ${title?`<div style="font-size:10px;color:var(--gold-deep);margin-top:2px">${title}</div>`:''}
+          <div class="lb-stats">
+            <span class="stat-pill">دور الـ16: ${p.r16}</span>
+            <span class="stat-pill">الإقصائيات: ${p.ko}</span>
+          </div>
+        </div>
+        <div class="lb-score">${p.total}</div>
+      </div>`;
+    });
+  }
+
+  $app.innerHTML = html;
+  document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
+  if(document.getElementById('adminJump')){
+    document.getElementById('adminJump').onclick = ()=>{ state.view='admin'; render(); };
+  }
+  if(combined.length) burstCelebration(0.5);
 }
 
 /* ---------------- Admin panel ---------------- */
@@ -1238,9 +1345,29 @@ async function renderAdmin(){
 
   */
 
-  const keys = await slist('identity:', true);
+  const idKeys = await slist('identity:', true);
+  const r16Keys = await slist('predictions:', true);
+  const koKeys = await slist('ko-predictions:', true);
+  const allKeysSet = new Set([
+    ...(idKeys || []).map(k => k.replace('identity:', '')),
+    ...(r16Keys || []).map(k => k.replace('predictions:', '')),
+    ...(koKeys || []).map(k => k.replace('ko-predictions:', ''))
+  ]);
   const people = [];
-  if(keys){ for(const k of keys){ const v = await sget(k, true); if(v) people.push({ key: k.replace('identity:',''), name: v.name }); } }
+  for(const key of allKeysSet){
+    let name = key;
+    const idn = await sget(`identity:${key}`, true);
+    if(idn && idn.name) name = idn.name;
+    else {
+      const kp = await sget(`ko-predictions:${key}`, true);
+      if(kp && kp.name) name = kp.name;
+      else {
+        const rp = await sget(`predictions:${key}`, true);
+        if(rp && rp.name) name = rp.name;
+      }
+    }
+    people.push({ key, name });
+  }
   const list = document.getElementById('predsList');
   if(people.length===0){
     list.innerHTML = `<div class="empty-note">لا يوجد أسماء مسجّلة بعد.</div>`;
@@ -1282,11 +1409,12 @@ async function renderAdmin(){
       btn.onclick = async ()=>{
         const key = btn.getAttribute('data-delkey');
         const name = btn.getAttribute('data-delname');
-        const ok = confirm(`تحذير: سيتم حذف "${name}" نهائيًا مع كل توقعاته. لا يمكن التراجع. هل أنت متأكد؟`);
+        const ok = confirm(`تحذير: سيتم حذف "${name}" نهائيًا مع كل توقعاته (دور الـ16 والأدوار الإقصائية معًا). لا يمكن التراجع. هل أنت متأكد؟`);
         if(!ok) return;
         await sdel(`identity:${key}`, true);
         await sdel(`predictions:${key}`, true);
-        toast(`تم حذف "${name}" نهائيًا`);
+        await sdel(`ko-predictions:${key}`, true);
+        toast(`تم حذف "${name}" نهائيًا من كل الأدوار`);
         renderAdmin();
       };
     });
