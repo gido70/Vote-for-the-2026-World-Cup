@@ -814,7 +814,7 @@ async function renderMatches(){
   }
   let html = `
     <div class="topbar">
-      <div class="brand"><span class="trophy">🏆</span> ${state.isAdmin ? `🔒 وضع الأدمن — ${escapeHtml(state.name)}` : `أهلاً ${escapeHtml(state.name)}`}</div>
+      <div class="brand"><span class="trophy">🏆</span> ${state.isAdmin ? `🔒 لوحة الأدمن` : `أهلاً ${escapeHtml(state.name)}`}</div>
     </div>
     <div class="nav-grid">
       <button class="navbtn" id="finalChampBtn">🏆 الأبطال النهائيون</button>
@@ -1198,6 +1198,12 @@ async function renderAdmin(){
   const actualScores = (await sget('actual-scores', true)) || {};
 
   const allPreds = (await getAllPredictions('predictions:')) || [];
+  const koPredsAdmin = (await getAllPredictions('ko-predictions:')) || [];
+  const koScoresAdmin = (await sget('ko-actual-scores', true)) || {};
+  const KO_LABELS_ADMIN = {
+    qf1:'ربع النهائي 1', qf2:'ربع النهائي 2', qf3:'ربع النهائي 3', qf4:'ربع النهائي 4',
+    sf1:'نصف النهائي 1', sf2:'نصف النهائي 2', third:'تحديد المركز الثالث', final:'النهائي'
+  };
   const allIdentities = ((await getAllPredictions('identity:')) || []).sort((a,b)=>a.name.localeCompare(b.name,'ar'));
 
   function codesTableHtml(){
@@ -1444,16 +1450,34 @@ async function renderAdmin(){
     function participantDetailHtml(key){
       const pred = allPreds.find(p => normalizeName(p.name) === key);
       const picks = pred && pred.picks ? pred.picks : {};
-      if(!Object.keys(picks).length) return `<div class="note" style="padding:10px 0;">لم يشارك في أي مباراة بعد.</div>`;
-      const rows = MATCHES.map(m=>{
+      const koPred = koPredsAdmin.find(p => normalizeName(p.name) === key);
+      const koPicks = koPred && koPred.picks ? koPred.picks : {};
+      if(!Object.keys(picks).length && !Object.keys(koPicks).length){
+        return `<div class="note" style="padding:10px 0;">لم يشارك في أي مباراة بعد.</div>`;
+      }
+      let rows = '';
+      rows += `<tr><td colspan="3" style="padding:8px 8px 4px;color:#a97a12;font-weight:900;">⚽ دور الـ16</td></tr>`;
+      MATCHES.forEach(m=>{
         const pick = picks[m.id];
-        if(!pick) return '';
+        if(!pick) return;
         const result = actual[m.id];
         const team = TEAMS[pick];
         let status = '⏳ لم تُحسم بعد';
         if(result) status = (result === pick) ? '✅ صحيح' : '❌ خطأ';
-        return `<tr style="color:#1a2b4a;"><td style="padding:5px 8px;">${m.venue || m.id}</td><td style="padding:5px 8px;">${team ? team.flag+' '+team.name : pick}</td><td style="padding:5px 8px;">${status}</td></tr>`;
-      }).join('');
+        rows += `<tr style="color:#1a2b4a;"><td style="padding:5px 8px;">${m.venue || m.id}</td><td style="padding:5px 8px;">${team ? team.flag+' '+team.name : pick}</td><td style="padding:5px 8px;">${status}</td></tr>`;
+      });
+      const koIds = Object.keys(KO_LABELS_ADMIN).filter(id => koPicks[id]);
+      if(koIds.length){
+        rows += `<tr><td colspan="3" style="padding:8px 8px 4px;color:#a97a12;font-weight:900;">🏆 الأدوار الإقصائية</td></tr>`;
+        koIds.forEach(id=>{
+          const pick = koPicks[id];
+          const result = actual[id];
+          let status = '⏳ لم تُحسم بعد';
+          if(result) status = (pick.winner === result) ? '✅ صحيح' : '❌ خطأ';
+          const scoreText = `${pick.a} - ${pick.b}${pick.penalty ? ' (ركلات ترجيح)' : ''}`;
+          rows += `<tr style="color:#1a2b4a;"><td style="padding:5px 8px;">${KO_LABELS_ADMIN[id]}</td><td style="padding:5px 8px;">${scoreText}</td><td style="padding:5px 8px;">${status}</td></tr>`;
+        });
+      }
       return `<table style="width:100%; font-size:12.5px; margin-top:8px;"><tbody>${rows}</tbody></table>`;
     }
     list.innerHTML = people.map(p=>`
