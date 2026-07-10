@@ -823,6 +823,7 @@ async function renderMatches(){
       <button class="navbtn" id="hofBtn">🏅 أبطال دور الـ16</button>
       <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button>
       <button class="navbtn" id="myStatsBtn">📋 مشاركاتي</button>
+      <button class="navbtn" id="signOutBtn" style="background:linear-gradient(135deg,#64748b,#334155) !important;">🚪 تسجيل الخروج</button>
       ${state.isAdmin
         ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button><button class="navbtn" id="adminLogout" style="background:linear-gradient(135deg,#64748b,#334155) !important;">🚪 خروج الأدمن</button>`
         : `<button class="navbtn" id="adminEntry" style="grid-column:1/-1;">🔒 دخول المشرف</button>`}
@@ -903,6 +904,13 @@ async function renderMatches(){
   window.scrollTo(0, scrollY);
   document.getElementById('lbBtn').onclick = ()=>{ state.view='leaderboard'; render(); };
   document.getElementById('myStatsBtn').onclick = ()=>{ state.view='myStats'; render(); };
+  document.getElementById('signOutBtn').onclick = ()=>{
+    const ok = confirm('هل تريد تسجيل الخروج؟ ستحتاج لكتابة اسمك (ورمزك إن كان محفوظًا) للدخول مرة أخرى. توقعاتك محفوظة ولن تتأثر.');
+    if(!ok) return;
+    localStorage.removeItem('wc2026-player-key');
+    state.name = ''; state.nameKey = '';
+    state.view = 'name'; render();
+  };
   document.getElementById('hofBtn').onclick = ()=>{ state.view='hof'; render(); };
   document.getElementById('finalChampBtn').onclick = ()=>{ state.view='finalChampions'; render(); };
   if(document.getElementById('adminJump')){
