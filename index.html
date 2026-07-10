@@ -616,6 +616,7 @@ function render(){
   if(state.view === 'leaderboard') return renderLeaderboard();
   if(state.view === 'hof') return renderHallOfFame();
   if(state.view === 'finalChampions') return renderFinalChampions();
+  if(state.view === 'myStats') return renderMyStats();
   if(state.view === 'admin') return renderAdmin();
 }
 function renderConfigError(){
@@ -821,6 +822,7 @@ async function renderMatches(){
       <a class="navbtn" href="./knockout.html">⚔️ الأدوار الإقصائية</a>
       <button class="navbtn" id="hofBtn">🏅 أبطال دور الـ16</button>
       <button class="navbtn" id="lbBtn">📊 لوحة الترتيب</button>
+      <button class="navbtn" id="myStatsBtn">📋 مشاركاتي</button>
       ${state.isAdmin
         ? `<button class="navbtn" id="adminJump">🔒 لوحة الأدمن</button><button class="navbtn" id="adminLogout" style="background:linear-gradient(135deg,#64748b,#334155) !important;">🚪 خروج الأدمن</button>`
         : `<button class="navbtn" id="adminEntry" style="grid-column:1/-1;">🔒 دخول المشرف</button>`}
@@ -900,6 +902,7 @@ async function renderMatches(){
   $app.innerHTML = html;
   window.scrollTo(0, scrollY);
   document.getElementById('lbBtn').onclick = ()=>{ state.view='leaderboard'; render(); };
+  document.getElementById('myStatsBtn').onclick = ()=>{ state.view='myStats'; render(); };
   document.getElementById('hofBtn').onclick = ()=>{ state.view='hof'; render(); };
   document.getElementById('finalChampBtn').onclick = ()=>{ state.view='finalChampions'; render(); };
   if(document.getElementById('adminJump')){
@@ -1084,6 +1087,74 @@ async function renderHallOfFame(){
     document.getElementById('adminJump').onclick = ()=>{ state.view='admin'; render(); };
   }
   if(top3.length) burstCelebration(0.4);
+}
+
+/* ---------------- My Participations (public, own record only) ---------------- */
+async function renderMyStats(){
+  $app.innerHTML = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📋 مشاركاتي</div></div><div class="banner">جاري التحميل...</div>`;
+
+  const actual = await getActual();
+  const myPred = (await sget(`predictions:${state.nameKey}`, true)) || {};
+  const myPicks = myPred.picks || {};
+  const koPred = (await sget(`ko-predictions:${state.nameKey}`, true)) || {};
+  const koPicks = koPred.picks || {};
+
+  const KO_LABELS_MY = {
+    qf1:'ربع النهائي 1', qf2:'ربع النهائي 2', qf3:'ربع النهائي 3', qf4:'ربع النهائي 4',
+    sf1:'نصف النهائي 1', sf2:'نصف النهائي 2', third:'تحديد المركز الثالث', final:'النهائي'
+  };
+
+  let rows = '';
+  let anyR16 = false;
+  MATCHES.forEach(m=>{
+    const pick = myPicks[m.id];
+    if(!pick) return;
+    anyR16 = true;
+    const result = actual[m.id];
+    const team = TEAMS[pick];
+    let status = '⏳ لم تُحسم بعد';
+    if(result) status = (result === pick) ? '✅ صحيح' : '❌ خطأ';
+    rows += `<tr><td style="padding:7px 8px;">${m.venue || m.id}</td><td style="padding:7px 8px;">${team ? team.flag+' '+team.name : pick}</td><td style="padding:7px 8px;">${status}</td></tr>`;
+  });
+
+  let koRows = '';
+  let anyKO = false;
+  Object.keys(KO_LABELS_MY).forEach(id=>{
+    const pick = koPicks[id];
+    if(!pick) return;
+    anyKO = true;
+    const result = actual[id];
+    let status = '⏳ لم تُحسم بعد';
+    if(result) status = (pick.winner === result) ? '✅ صحيح' : '❌ خطأ';
+    const scoreText = `${pick.a} - ${pick.b}${pick.penalty ? ' (ركلات ترجيح)' : ''}`;
+    koRows += `<tr><td style="padding:7px 8px;">${KO_LABELS_MY[id]}</td><td style="padding:7px 8px;">${scoreText}</td><td style="padding:7px 8px;">${status}</td></tr>`;
+  });
+
+  let html = `<div class="topbar"><button class="navbtn" id="backBtn">‹ المباريات</button><div class="brand" style="font-size:13px">📋 مشاركاتي</div></div>`;
+  html += `<div class="hof-hero">
+      <div class="hof-hero-title">📋 مشاركاتي</div>
+      <div class="hof-hero-sub">كل توقعاتك في مكان واحد — دور الـ16 وكل الأدوار الإقصائية</div>
+    </div>`;
+
+  if(!anyR16 && !anyKO){
+    html += `<div class="empty-note">لم تشارك في أي مباراة بعد.</div>`;
+  } else {
+    html += `<div class="mini-box" style="margin-bottom:14px;">
+      <b>⚽ دور الـ16</b>
+      ${anyR16
+        ? `<table style="width:100%; font-size:13px; margin-top:8px;"><tbody>${rows}</tbody></table>`
+        : `<div class="note" style="text-align:right; padding:8px 0;">لم تشارك في هذا الدور بعد.</div>`}
+    </div>`;
+    html += `<div class="mini-box">
+      <b>🏆 الأدوار الإقصائية</b>
+      ${anyKO
+        ? `<table style="width:100%; font-size:13px; margin-top:8px;"><tbody>${koRows}</tbody></table>`
+        : `<div class="note" style="text-align:right; padding:8px 0;">لم تشارك في هذه الأدوار بعد — <a href="./knockout.html" style="color:var(--purple);">صوّت من هنا</a>.</div>`}
+    </div>`;
+  }
+
+  $app.innerHTML = html;
+  document.getElementById('backBtn').onclick = ()=>{ state.view='matches'; render(); };
 }
 
 /* ---------------- Final Champions (combined R16 + Knockout) ---------------- */
